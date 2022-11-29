@@ -75,7 +75,6 @@ def main() -> None:
     Moves the masks to the initial dataset path
     :return: None. moves the masks
     """
-
     create_initial_dataset_folder_with_aachen_images()
 
     for image_path in glob("initial_dataset/*.png"):
