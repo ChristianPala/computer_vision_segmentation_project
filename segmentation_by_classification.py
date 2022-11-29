@@ -1,0 +1,1 @@
+# We are interested in the classification of the sky in the image, so we
