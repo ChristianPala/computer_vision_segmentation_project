@@ -1,11 +1,12 @@
+# Libraries:
 import os
 from pathlib import Path
-
 import numpy as np
 import matplotlib.pyplot as plt
 import skimage
 from typing import Union
 
+# Global variables:
 from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
 
 
@@ -60,18 +61,15 @@ def binary_mask(mask) -> np.ndarray:
     :return: the binary mask
     """
     # from the docs, sky has the following RGB values: 70,130,180.
+    # we noticed the images are saved with 4 channels, so we need to ignore the alpha channel.
     # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
 
-    # sky mask: 70,130,180
+    # sky mask: 70, 130, 180
     sky = ((mask[:, :, 0] == 70) & (mask[:, :, 1] == 130) & (mask[:, :, 2] == 180))
 
-    # set to 1 the sky pixels and 0 the rest
-    mask[sky, 0] = 255
-    mask[sky, 1] = 255
-    mask[sky, 2] = 255
-    mask[~sky, 0] = 0
-    mask[~sky, 1] = 0
-    mask[~sky, 2] = 0
+    # set to 1 the sky pixels and 0 the rest, ignoring the alpha channel.
+    mask[sky, :] = np.array([255, 255, 255, 255])
+    mask[~sky, :] = np.array([0, 0, 0, 255])
     return mask/255
 
 
@@ -88,7 +86,7 @@ def main():
 
     file_name = 'binary_sky_mask'
     binary_mask1 = binary_mask(segm1)
-    plt.imshow(binary_mask1, vmin=0, vmax=1)
+    plt.imshow(binary_mask1, vmin=0, vmax=255)
     plt.show()
 
 
