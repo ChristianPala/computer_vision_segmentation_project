@@ -50,8 +50,41 @@ def visualize_image_and_segmentation(img_number: Union[str, int]) -> None:
     fig.show()
 
 
+def binary_mask(mask) -> np.ndarray:
+    """
+    Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
+    :param mask: the mask to convert
+    :return: the binary mask
+    """
+    # from the docs, sky has the following RGB values: 70,130,180.
+    # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
+
+    # sky mask: 70,130,180
+    sky = ((mask[:, :, 0] == 70) & (mask[:, :, 1] == 130) & (mask[:, :, 2] == 180))
+
+    # set to 1 the sky pixels and 0 the rest
+    mask[sky, 0] = 255
+    mask[sky, 1] = 255
+    mask[sky, 2] = 255
+    mask[~sky, 0] = 0
+    mask[~sky, 1] = 0
+    mask[~sky, 2] = 0
+    return mask/255
+
+
+def save_binary_mask_images():
+    binary_masks = [binary_mask(get_image_and_segmentation(i)[1]) for i in range(174)]
+    #skimage.io.imsave()
+
+
 def main():
     visualize_image_and_segmentation(img_number='1')
+    img1, segm1 = get_image_and_segmentation('1')
+
+    file_name = 'binary_sky_mask'
+    binary_mask1 = binary_mask(segm1)
+    plt.imshow(binary_mask1, vmin=0, vmax=1)
+    plt.show()
 
 
 if __name__ == '__main__':

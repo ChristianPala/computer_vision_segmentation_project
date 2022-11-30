@@ -68,6 +68,7 @@ def binary_mask(mask) -> np.ndarray:
     """
     # from the docs, sky has the following RGB values: 70,130,180.
     # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
+
     # sky mask: 70,130,180
 
 
