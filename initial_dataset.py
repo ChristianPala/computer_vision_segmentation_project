@@ -11,13 +11,7 @@ import skimage
 
 # Global variables:
 # Path to the initial dataset folder
-INITIAL_DATASET_PATH = Path("initial_dataset")
-INITIAL_DATASET_PATH.mkdir(exist_ok=True)
-# Training city:
-# We will use the city of Aachen for our training dataset
-TRAINING_CITY = "aachen"
-# We will use the city of Zürich for our testing dataset
-TESTING_CITY = "zurich"
+from config import INITIAL_DATASET_PATH, TRAINING_CITY, TESTING_CITY
 
 
 def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool = True) -> None:
@@ -30,7 +24,7 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     """
     # Select training or testing dataset folder:
     im_path = INITIAL_DATASET_PATH / "train" if train else INITIAL_DATASET_PATH / "test"
-    im_path.mkdir(exist_ok=True)
+    im_path.mkdir(exist_ok=True, parents=True)
 
     # if the images are already in the folder, we don't need to copy them
     if len(glob(str(Path(im_path, "*.png")))) == 0:

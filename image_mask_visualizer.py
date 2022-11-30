@@ -1,40 +1,43 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 import skimage
 from typing import Union
 
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
 
-def get_image_and_segmentation(img_number: Union[str, int]) -> (np.ndarray, np.ndarray):
+
+def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> (np.ndarray, np.ndarray):
     """
     Gets the image corresponding to the given number and its full segmentation.
-    Args:
-        img_number: Index of the image desired to be plotted
-    Returns: image and segmentation as numpy ndarrays.
+    @param: img_number: Index of the image desired to be plotted
+    @param: train: True if the image is from the training dataset, False if it is from the testing dataset
+    :return image and segmentation as numpy ndarrays.
     """
     # Check that the given image number is a string
     img_number = str(img_number)
 
-    # Get the paths of the desired image and segmentation
-    cwd_path = os.getcwd()
-    img_path = cwd_path + '/initial_dataset/' + 'image_' + img_number + '.png'
-    segmentation_path = cwd_path + '/initial_dataset/' + 'mask_' + img_number + '.png'
+    im_path = str(Path(TRAINING_DATASET_PATH, 'image_' + img_number + '.png')) \
+        if train else str(Path(TESTING_DATASET_PATH, 'image_' + img_number + '.png'))
+    segmentation_path = str(Path(TRAINING_DATASET_PATH, 'mask_' + img_number + '.png')) \
+        if train else str(Path(TESTING_DATASET_PATH, 'mask_' + img_number + '.png'))
 
     # Get the actual image and segmentation as numpy ndarrays
-    im = skimage.io.imread(img_path)
+    im = skimage.io.imread(im_path)
     segmentation = skimage.io.imread(segmentation_path)
     return im, segmentation
 
 
-def visualize_image_and_segmentation(img_number: Union[str, int]) -> None:
+def visualize_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> None:
     """
     Plots side-by-side the image corresponding to the given number and its full segmentation.
-    Args:
-        img_number: Index of the image desired to be plotted
-    Returns: None. It plots directly the corresponding images.
+    @param: img_number: Index of the image desired to be plotted
+    :return None. It plots directly the corresponding images.
     """
     # Get the actual image and segmentation as numpy ndarrays
-    im, segmentation = get_image_and_segmentation(img_number)
+    im, segmentation = get_image_and_segmentation(img_number, train)
 
     # Plot the image and its segmentation side-by-side
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
