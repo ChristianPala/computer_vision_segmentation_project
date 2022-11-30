@@ -73,8 +73,10 @@ def binary_mask(mask) -> np.ndarray:
 
 
 def save_binary_mask_images():
-    binary_masks = [binary_mask(get_image_and_segmentation(i)[1]) for i in range(174)]
-    #skimage.io.imsave()
+    n_images = 174
+    new_imgs_path = 'binary_mask_sky_'
+    [skimage.io.imsave(fname=f'{new_imgs_path}{i}', arr=binary_mask(get_image_and_segmentation(i)[1]))
+     for i in range(n_images)]
 
 
 def main():
