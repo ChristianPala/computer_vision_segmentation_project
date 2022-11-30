@@ -34,7 +34,7 @@ def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) 
 def visualize_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> None:
     """
     Plots side-by-side the image corresponding to the given number and its full segmentation.
-    @param: img_number: Index of the image desired to be plotted
+    @param: img_number: Index of the image desired to be plotted.
     :return None. It plots directly the corresponding images.
     """
     # Get the actual image and segmentation as numpy ndarrays
@@ -57,7 +57,7 @@ def visualize_image_and_segmentation(img_number: Union[str, int], train: bool = 
 def binary_mask(mask) -> np.ndarray:
     """
     Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
-    :param mask: the mask to convert
+    @param: param mask: the mask to convert
     :return: the binary mask
     """
     # from the docs, sky has the following RGB values: 70,130,180.
@@ -73,10 +73,16 @@ def binary_mask(mask) -> np.ndarray:
     return mask/255
 
 
-def save_binary_mask_images():
+def save_binary_mask_images(label: str = 'sky', imgs_path: str = ''):
+    """
+    Saves the binary mask images
+    @param: label: The label of the element that is wanted to be selected.
+    @param: imgs_path: Desired path where the binary mask images will be saved.
+    :return: None. It directly saves the images in the desired path.
+    """
     n_images = 174
-    new_imgs_path = 'binary_mask_sky_'
-    [skimage.io.imsave(fname=f'{new_imgs_path}{i}', arr=binary_mask(get_image_and_segmentation(i)[1]))
+    imgs_path += f'binary_mask_{label}_'
+    [skimage.io.imsave(fname=f'{imgs_path}{i}', arr=binary_mask(get_image_and_segmentation(i)[1]))
      for i in range(n_images)]
 
 
