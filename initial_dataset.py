@@ -23,7 +23,7 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     :return: None. Populates the initial dataset folder with the images and masks from the given city
     """
     # Select training or testing dataset folder:
-    im_path = INITIAL_DATASET_PATH / "train" if train else INITIAL_DATASET_PATH / "test"
+    im_path = Path(INITIAL_DATASET_PATH,"train") if train else Path(INITIAL_DATASET_PATH,"test")
     im_path.mkdir(exist_ok=True, parents=True)
 
     # if the images are already in the folder, we don't need to copy them
@@ -42,7 +42,7 @@ def rename_images_and_masks(train: bool = True) -> None:
     @param train: whether we are renaming the training dataset or the testing dataset.
     :return: None. Renames the images and masks
     """
-    im_path = INITIAL_DATASET_PATH / "train" if train else INITIAL_DATASET_PATH / "test"
+    im_path = Path(INITIAL_DATASET_PATH, "train") if train else Path(INITIAL_DATASET_PATH, "test")
 
     # if the images are already correctly named, we don't need to rename them:
     if len(glob(str(im_path / "mask_0.png"))) == 0:

@@ -91,6 +91,7 @@ def main():
     img1, segm1 = get_image_and_segmentation('1')
 
     file_name = 'binary_sky_mask'
+    save_binary_mask_images(label='sky', imgs_path=file_name)
     binary_mask1 = binary_mask(segm1)
     plt.imshow(binary_mask1, vmin=0, vmax=255)
     plt.show()
