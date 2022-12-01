@@ -54,6 +54,18 @@ def rename_images_and_masks(train: bool = True) -> None:
             Path(image_path).rename(im_path / f"image_{i}.png")
 
 
+def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
+    """
+    Removes the alpha channel from the image
+    @param image: the image to remove the alpha channel from
+    :return: the image without the alpha channel
+    """
+    if image.shape[-1] == 4:
+        return image[..., :3]
+    else:
+        return image
+
+
 def binary_mask(mask) -> np.ndarray:
     """
     Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
