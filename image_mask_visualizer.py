@@ -1,24 +1,13 @@
 # Libraries:
-import os
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import skimage
 from typing import Union
-import glob
 
 
 # Global variables:
 from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
-
-
-def count_number_of_files(path: Union[Path, str]) -> int:
-    """
-    Counts the number of files in a directory
-    @param path: the path to the directory
-    :return: the number of files in the directory
-    """
-    return len(glob.glob(os.path.join(path, '*image_*.png')))
 
 
 def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> (np.ndarray, np.ndarray):
@@ -77,61 +66,12 @@ def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
         return image
 
 
-def binary_mask(mask) -> np.ndarray:
-    """
-    Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
-    @param: param mask: the mask to convert
-    :return: the binary mask
-    """
-    # from the docs, sky has the following RGB values: 70,130,180.
-    # we noticed the images are saved with 4 channels, so we need to ignore the alpha channel.
-    # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
-
-    # Remove the alpha channel from the segmentation image
-    mask = remove_alpha_channel(mask)
-
-    # Compute the sky mask: 70, 130, 180
-    sky = ((mask[:, :, 0] == 70) & (mask[:, :, 1] == 130) & (mask[:, :, 2] == 180))
-
-    # set to 1 the sky pixels and 0 the rest, ignoring the alpha channel.
-    mask[sky, :] = 255
-    mask[~sky, :] = 0
-    return mask
-
-
-def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
-    """
-    Saves the binary mask images
-    @param: label: The label of the element that is wanted to be selected.
-    @param: train: Flag to define whether the binary masks are for training or testing.
-    :return: None. It directly saves the images in the desired path.
-    """
-    if train:
-        n_images = count_number_of_files(TRAINING_DATASET_PATH)
-        imgs_path = Path(TRAINING_DATASET_PATH, f'binary_mask_{label}_')
-        [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=True)[1]))
-         for i in range(n_images)]
-    else:
-        n_images = count_number_of_files(TESTING_DATASET_PATH)
-        imgs_path = Path(TESTING_DATASET_PATH, f'binary_mask_{label}_')
-        [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=False)[1]))
-         for i in range(n_images)]
-
-
 def main():
-    # # Visualize the images and their segmentation
-    # visualize_image_and_segmentation(img_number='1')
-    # # Get image and its segmentation
-    # img1, segm1 = get_image_and_segmentation('1')
-    #
-    # # Check binary masks creation
-    # binary_mask1 = binary_mask(segm1)
-    # plt.imshow(binary_mask1, vmin=0, vmax=255)
-    # plt.show()
+    # Visualize the images and their segmentation
+    visualize_image_and_segmentation(img_number='1')
 
-    # Save the binary masks
-    save_binary_mask_images(label='sky', train=True)
-    save_binary_mask_images(label='sky', train=False)
+    # Get image and its segmentation
+    # img1, segm1 = get_image_and_segmentation('1')
 
 
 if __name__ == '__main__':

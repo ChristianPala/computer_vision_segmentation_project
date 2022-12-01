@@ -1,17 +1,25 @@
 # start with a sample of 174 images from Aachen for our dataset:
 # We need to get the matching masks in the gtFine folder
-import warnings
+
 # Libraries:
 from glob import glob
 from pathlib import Path
 import shutil
-from typing import Optional
+from typing import Union
 import numpy as np
 import skimage
+import os
+import glob
+import warnings
+
+# Import functions from other python files
+from image_mask_visualizer import get_image_and_segmentation
 
 # Global variables:
 # Path to the initial dataset folder
 from config import INITIAL_DATASET_PATH, TRAINING_CITY, TESTING_CITY
+# Path to the training and testing datasets folders
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
 
 
 def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool = True) -> None:
@@ -23,7 +31,7 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     :return: None. Populates the initial dataset folder with the images and masks from the given city
     """
     # Select training or testing dataset folder:
-    im_path = Path(INITIAL_DATASET_PATH,"train") if train else Path(INITIAL_DATASET_PATH,"test")
+    im_path = Path(INITIAL_DATASET_PATH, "train") if train else Path(INITIAL_DATASET_PATH, "test")
     im_path.mkdir(exist_ok=True, parents=True)
 
     # if the images are already in the folder, we don't need to copy them
@@ -66,16 +74,56 @@ def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
         return image
 
 
+def count_number_of_files(path: Union[Path, str]) -> int:
+    """
+    Counts the number of files in a directory
+    @param path: the path to the directory
+    :return: the number of files in the directory
+    """
+    return len(glob.glob(os.path.join(path, '*image_*.png')))
+
+
 def binary_mask(mask) -> np.ndarray:
     """
     Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
-    :param mask: the mask to convert
+    @param: param mask: the mask to convert
     :return: the binary mask
     """
     # from the docs, sky has the following RGB values: 70,130,180.
+    # we noticed the images are saved with 4 channels, so we need to ignore the alpha channel.
     # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
 
-    # sky mask: 70,130,180
+    # Remove the alpha channel from the segmentation image
+    mask = remove_alpha_channel(mask)
+
+    # Compute the sky mask: 70, 130, 180
+    sky = ((mask[:, :, 0] == 70) & (mask[:, :, 1] == 130) & (mask[:, :, 2] == 180))
+
+    # set to 1 the sky pixels and 0 the rest, ignoring the alpha channel.
+    mask[sky, :] = 255
+    mask[~sky, :] = 0
+    return mask
+
+
+def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
+    """
+    Saves the binary mask images
+    @param: label: The label of the element that is wanted to be selected.
+    @param: train: Flag to define whether the binary masks are for training or testing.
+    :return: None. It directly saves the images in the desired path.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(action='ignore', category=UserWarning)  # Suppress warnings about low contrast images
+        if train:
+            n_images = count_number_of_files(TRAINING_DATASET_PATH)
+            imgs_path = Path(TRAINING_DATASET_PATH, f'binary_mask_{label}_')
+            [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=True)[1]))
+             for i in range(n_images)]
+        else:
+            n_images = count_number_of_files(TESTING_DATASET_PATH)
+            imgs_path = Path(TESTING_DATASET_PATH, f'binary_mask_{label}_')
+            [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=False)[1]))
+             for i in range(n_images)]
 
 
 def main() -> None:
@@ -83,10 +131,15 @@ def main() -> None:
     Moves the masks to the initial dataset path
     :return: None. moves the masks
     """
+    # Create the initial dataset folder containing images and their full segmentation
     create_initial_dataset_folder_with_images_and_masks(city=TRAINING_CITY, train=True)
     create_initial_dataset_folder_with_images_and_masks(city=TESTING_CITY, train=False)
     rename_images_and_masks(train=True)
     rename_images_and_masks(train=False)
+
+    # Save the binary masks into the training and testing folders
+    save_binary_mask_images(label='sky', train=True)
+    save_binary_mask_images(label='sky', train=False)
 
 
 if __name__ == "__main__":
