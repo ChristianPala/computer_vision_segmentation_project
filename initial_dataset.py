@@ -83,7 +83,7 @@ def count_number_of_files(path: Union[Path, str]) -> int:
     return len(glob.glob(os.path.join(path, '*image_*.png')))
 
 
-def binary_mask(mask) -> np.ndarray:
+def binary_mask(mask: np.ndarray) -> np.ndarray:
     """
     Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
     @param: param mask: the mask to convert
@@ -128,8 +128,8 @@ def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
 
 def main() -> None:
     """
-    Moves the masks to the initial dataset path
-    :return: None. moves the masks
+    Moves the masks to the initial dataset path and saves the binary masks
+    :return: None. moves the masks and saves the binary masks
     """
     # Create the initial dataset folder containing images and their full segmentation
     create_initial_dataset_folder_with_images_and_masks(city=TRAINING_CITY, train=True)
