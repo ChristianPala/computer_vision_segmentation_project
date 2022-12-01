@@ -54,18 +54,6 @@ def visualize_image_and_segmentation(img_number: Union[str, int], train: bool = 
     fig.show()
 
 
-def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
-    """
-    Removes the alpha channel from the image
-    @param image: the image to remove the alpha channel from
-    :return: the image without the alpha channel
-    """
-    if image.shape[-1] == 4:
-        return image[..., :3]
-    else:
-        return image
-
-
 def main():
     # Visualize the images and their segmentation
     visualize_image_and_segmentation(img_number='1')
