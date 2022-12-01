@@ -99,11 +99,11 @@ def binary_mask(mask) -> np.ndarray:
     return mask
 
 
-def save_binary_mask_images(label: str = 'sky', train: bool = True):
+def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
     """
     Saves the binary mask images
     @param: label: The label of the element that is wanted to be selected.
-    @param: imgs_path: Desired path where the binary mask images will be saved.
+    @param: train: Flag to define whether the binary masks are for training or testing.
     :return: None. It directly saves the images in the desired path.
     """
     if train:
