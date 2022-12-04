@@ -70,15 +70,14 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     """
     Evaluates the model on the dataset
     @param model: the model to evaluate
-    @param train: True if the image is from the training dataset, False if it is from the testing dataset
+    :return: the AUC score of the model
     """
     df = load_dataset(train=False)
     rgb = df[['r', 'g', 'b']]
     x = np.array(rgb.mean(axis=1)).reshape(-1, 1)
     y = df['class']
-    # we care about the AUC score:
-    auc = roc_auc_score(y, model.predict_proba(x)[:, 1])
-    print(f'AUC: {auc:.3f}')
+    # Evaluate the model on the AUC score:
+    auc = roc_auc_score(y, model.predict(x))
     return auc
 
 
@@ -89,7 +88,8 @@ def main():
     """
     log_reg = create_model(model_type='logistic_regression')
     log_reg = train_model(log_reg)
-    evaluate_model(log_reg)
+    auc = evaluate_model(log_reg)
+    print(f'AUC: {auc:.3f}')
 
 
 if __name__ == '__main__':
