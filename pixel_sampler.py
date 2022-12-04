@@ -82,10 +82,10 @@ def sample_pixels(total_count: int, train: bool = True) -> pd.DataFrame:
         # flatten the mask:
         mask = mask.flatten()
         # sample the pixels from the sky class
-        sky_pixels = np.random.choice(np.arange(len(r)), size=int(sky_sample * np.sum(mask == 1)),
+        sky_pixels = np.random.choice(np.arange(len(mask)), size=int(sky_sample * np.sum(mask == 1)),
                                       replace=False)
         # sample the pixels from the non-sky class
-        non_sky_pixels = np.random.choice(np.arange(len(r)), size=int(non_sky_sample * np.sum(mask == 0)),
+        non_sky_pixels = np.random.choice(np.arange(len(mask)), size=int(non_sky_sample * np.sum(mask == 0)),
                                           replace=False)
 
         # create the dataframe for the sky pixels
@@ -114,8 +114,8 @@ def main() -> None:
     Main function to sample pixels from the training dataset, and save them to a csv file
     """
     # sample amount of pixels from the training and testing dataset:
-    training_pixels: int = 100
-    testing_pixels: int = 50
+    training_pixels: int = 10000
+    testing_pixels: int = 5000
 
     # sample 10000 pixels from the training dataset
     train_df: pd.DataFrame = sample_pixels(training_pixels, train=True)

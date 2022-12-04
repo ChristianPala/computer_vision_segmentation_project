@@ -5,9 +5,8 @@ import warnings
 from glob import glob
 from pathlib import Path
 import shutil
-from typing import Optional
 import numpy as np
-import skimage
+
 
 # Global variables:
 # Path to the initial dataset folder
