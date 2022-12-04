@@ -1,5 +1,6 @@
 # Libraries:
 import os
+import warnings
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -120,18 +121,13 @@ def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
 
 def main():
     # # Visualize the images and their segmentation
-    # visualize_image_and_segmentation(img_number='1')
-    # # Get image and its segmentation
-    # img1, segm1 = get_image_and_segmentation('1')
-    #
-    # # Check binary masks creation
-    # binary_mask1 = binary_mask(segm1)
-    # plt.imshow(binary_mask1, vmin=0, vmax=255)
-    # plt.show()
+    visualize_image_and_segmentation(img_number='1')
 
     # Save the binary masks
-    save_binary_mask_images(label='sky', train=True)
-    save_binary_mask_images(label='sky', train=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        save_binary_mask_images(label='sky', train=True)
+        save_binary_mask_images(label='sky', train=False)
 
 
 if __name__ == '__main__':

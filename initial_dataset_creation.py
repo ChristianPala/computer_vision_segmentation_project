@@ -66,18 +66,6 @@ def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
         return image
 
 
-def binary_mask(mask) -> np.ndarray:
-    """
-    Converts the mask to a binary mask, keeping only the sky class as 1 and the rest as 0
-    :param mask: the mask to convert
-    :return: the binary mask
-    """
-    # from the docs, sky has the following RGB values: 70,130,180.
-    # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/helpers/labels.py
-
-    # sky mask: 70,130,180
-
-
 def main() -> None:
     """
     Moves the masks to the initial dataset path
