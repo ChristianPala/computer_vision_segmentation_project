@@ -120,7 +120,7 @@ def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
 
 
 def main():
-    # # Visualize the images and their segmentation
+    # Visualize the images and their segmentation
     visualize_image_and_segmentation(img_number='1')
 
     # Save the binary masks

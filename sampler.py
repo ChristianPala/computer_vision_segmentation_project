@@ -8,6 +8,8 @@ from glob import glob
 import skimage
 import pandas as pd
 from matplotlib import pyplot as plt
+from tqdm import tqdm
+from random import randint
 
 # Global variables:
 from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
@@ -111,13 +113,13 @@ def sample_pixels(total_count: int, train: bool = True) -> pd.DataFrame:
         non_sky_b = image[non_sky_x, non_sky_y, 2]
 
         # create the sky dataframe
-        # TODO: understand why the inversion of the x and y coordinates was necessary.
+        # TODO: speak with professor Giusti about it
         sky_df = pd.DataFrame(
-            {'image': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_y, 'y': sky_x, 'class': 1})
+            {'image': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_x, 'y': sky_y, 'class': 1})
 
         # create the non-sky dataframe
         non_sky_df = pd.DataFrame(
-            {'image': image_count, 'r': non_sky_r, 'g': non_sky_g, 'b': non_sky_b, 'x': non_sky_y, 'y': non_sky_x,
+            {'image': image_count, 'r': non_sky_r, 'g': non_sky_g, 'b': non_sky_b, 'x': non_sky_x, 'y': non_sky_y,
              'class': 0})
 
         # concatenate the dataframes
@@ -142,7 +144,7 @@ def inspect_sampler() -> None:
     # map the target to sky and non-sky
     # plot the pixels over the binary mask:
     plt.imshow(mask)
-    plt.scatter(x=pixels['x'], y=pixels['y'], c=pixels['class'], cmap='bwr', s=1, alpha=0.5)
+    plt.scatter(x=pixels['y'], y=pixels['x'], c=pixels['class'], cmap='bwr', s=1, alpha=0.5)
     # add a legend
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
                title='Pixel Class')
@@ -166,6 +168,83 @@ def explore_dataset(dataframe: pd.DataFrame, train: bool = True) -> None:
           f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky pixels.")
     # print the number of images
     print(f"{name} dataframe has {dataframe['image'].nunique()} images.")
+
+
+def has_sky(mask: np.ndarray) -> bool:
+
+    sky_pixels = np.argwhere(mask == 1)
+    return True if len(sky_pixels > 0) else False
+
+
+def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
+        -> ([np.ndarray], [int]):
+
+    patches: [np.ndarray] = []
+    classes: [int] = []
+    centers_x: [int] = []
+    centers_y: [int] = []
+    sky_count, non_sky_count = 0, 0
+    for i in range(n_patches):
+        while sky_count < 3:  # Get 3 sky patches
+            center_x = randint(delta, image.shape[0]-delta)
+            center_y = randint(delta, image.shape[1]-delta)
+
+            class_value = binary_mask[center_x, center_y]
+            if class_value == 1:
+                classes.append(class_value)
+                patch = image[center_x - delta: center_x + delta, center_y - delta: center_y + delta]
+                centers_x.append(center_x)
+                centers_y.append(center_y)
+                patches.append(patch)
+                sky_count += 1
+
+        while non_sky_count < 3:  # Get 3 non-sky patches
+            center_x = randint(delta, image.shape[0] - delta)
+            center_y = randint(delta, image.shape[1] - delta)
+
+            class_value = binary_mask[center_x, center_y]
+            if class_value == 0:
+                classes.append(class_value)
+                patch = image[center_x - delta: center_x + delta, center_y - delta: center_y + delta]
+                centers_x.append(center_x)
+                centers_y.append(center_y)
+                patches.append(patch)
+                non_sky_count += 1
+
+    return patches, classes, centers_x, centers_y
+
+
+def patch_sampler(train: bool = True) -> pd.DataFrame:
+
+    path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
+
+    # get all the images in the path:
+    images = []
+    for image_path in glob(os.path.join(path, 'image_*.png')):
+        images.append(skimage.io.imread(image_path))
+
+    # get all the binary masks in the path:
+    binary_masks = []
+    for mask_path in glob(os.path.join(path, 'binary_mask_*.png')):
+        binary_masks.append(skimage.io.imread(mask_path))
+
+    # cast the binary mask to grayscale
+    binary_masks = [skimage.color.rgb2gray(mask) for mask in binary_masks]
+
+    df = pd.DataFrame(columns=['image_num', 'patch', 'class', 'center_x', 'center_y'])
+    img_num: int = 0
+    for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
+        if not has_sky(mask):  # Skip images with no sky
+            continue
+
+        patches, classes, centers_x, centers_y = get_patches(img, mask)
+
+        temp_df = pd.DataFrame({'image_num': img_num, 'patch': patches, 'class': classes,
+                                'center_x': centers_x, 'center_y': centers_y})
+        df = pd.concat([df, temp_df], ignore_index=True)
+
+        img_num += 1
+    return df
 
 
 def main() -> None:
@@ -194,7 +273,14 @@ def main() -> None:
     explore_dataset(train_df)
     explore_dataset(test_df)
 
+    # Create dataset with patches
+    df_train = patch_sampler(train=True)
+    df_test = patch_sampler(train=False)
+    df_train.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_patch.csv'), index=False)
+    df_test.to_csv(Path(TESTING_DATASET_PATH, 'test_by_patch.csv'), index=False)
+
 
 # Driver Code
 if __name__ == '__main__':
     main()
+
