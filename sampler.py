@@ -151,6 +151,8 @@ def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
     plots_path = Path(os.path.join(path, 'plots'))
     plots_path.mkdir(parents=True, exist_ok=True)
 
+    name = 'training' if train else 'testing'
+
     # get the corresponding binary mask:
     binary_mask = skimage.io.imread(os.path.join(path, f'binary_mask_sky_{image_nr}.png'))
 
@@ -168,23 +170,25 @@ def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
                title='Pixel Class')
     # add a title
-    plt.title(f'Sampled pixels over the binary mask, extracted from image: {image_nr}.')
+    plt.title(f'Sampled pixels over the binary mask, extracted from {name} image: {image_nr}.')
     # save the plot
-    plt.savefig(Path(TRAINING_DATASET_PATH, f'sampled_pixels_from_image_{image_nr}.png'))
+    plt.savefig(Path(path, f'sampled_pixels_from_image_{image_nr}.png'))
     # show the plot
     plt.show()
 
 
-def sampler_visual_inspector() -> None:
+def sampler_visual_inspector(training: bool = True) -> None:
     """
     Visually inspect the sampler to make sure it is working properly.
+    @param training: bool: True if the image is from the training dataset, False if it is from the testing dataset
     :return: None. Displays the sampled pixels on the first image in the dataset, as a sanity check.
     """
-    # get the training dataset
-    train_df: pd.DataFrame = pd.read_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'))
+    # get the correct path:
+    path = TRAINING_DATASET_PATH if training else TESTING_DATASET_PATH
+    name = 'train' if training else 'test'
+    df: pd.DataFrame = pd.read_csv(Path(path, f'{name}_by_pixel.csv'))
     # plot the binary mask and the sampled pixels
-    plot_binary_mask_and_sampled_pixels(train_df, 0)
-    plot_binary_mask_and_sampled_pixels(train_df, 1)
+    plot_binary_mask_and_sampled_pixels(pixel_dataframe=df, image_nr=0, train=training)
 
 
 def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = True) -> None:
@@ -210,10 +214,10 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
 
     if sampling_type == "pixel":
         # print the number of sky and non-sky pixels per image
-        print(f"{name} dataframe sampled by {sampling_type} has "
-              f"{dataframe.groupby('image_nr')['class'].sum().mean():1.f} "
-              f"sky {sample_type} per image and "
-              f"{dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean():.1f} "
+        print(f"{name} dataframe sampled by {sampling_type} has approximately "
+              f"{int(dataframe.groupby('image_nr')['class'].sum().mean())} "
+              f"sky {sample_type} per image and approximately "
+              f"{int(dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean())} "
               f"non-sky {sample_type} per image.")
 
     elif sampling_type == "patch":
@@ -343,7 +347,7 @@ def main() -> None:
     test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
 
     # inspect the sampled pixels:
-    sampler_visual_inspector()
+    sampler_visual_inspector(training=True)
 
     # explore the pixel datasets:
     dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
