@@ -14,3 +14,5 @@ TESTING_DATASET_PATH = os.path.join(INITIAL_DATASET_PATH, 'test')
 TRAINING_CITY = "aachen"
 # We will use the city of Zürich for our testing dataset
 TESTING_CITY = "zurich"
+# Results folder:
+RESULTS_PATH = os.path.join(ROOT_PATH, 'results')

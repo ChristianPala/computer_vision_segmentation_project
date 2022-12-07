@@ -10,7 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 
 # Global Variables:
-from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, RESULTS_PATH
 
 
 # Functions:
@@ -76,6 +76,7 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     rgb = df[['r', 'g', 'b']]
     x = np.array(rgb.mean(axis=1)).reshape(-1, 1)
     y = df['class']
+    # Todo: try using r, g b and patches. See if it improves the AUC score
     # Evaluate the model on the AUC score:
     auc = roc_auc_score(y, model.predict(x))
     return auc
@@ -91,7 +92,16 @@ def main():
     knn = create_model(model_type='knn')
     knn = train_model(knn)
     auc = evaluate_model(log_reg)
-    print(f'AUC: {auc:.3f}')
+    print(f'Logistic Regression AUC: {auc}')
+    auc = evaluate_model(knn)
+    print(f'KNN AUC: {auc}')
+
+    # ensure the results directory exists:
+    Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
+    # save the results:
+    results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
+                            'auc': [auc, auc]})
+    results.to_csv(Path(RESULTS_PATH, 'pixel_classifier_by_average_rgb.csv'), index=False)
 
 
 if __name__ == '__main__':

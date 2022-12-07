@@ -1,0 +1,3 @@
+model,auc
+logistic_regression,0.9626768206482326
+knn,0.9626768206482326

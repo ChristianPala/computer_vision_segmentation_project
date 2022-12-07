@@ -119,7 +119,6 @@ def pixel_sampler(total_count: int, train: bool = True) -> pd.DataFrame:
         non_sky_b = image[non_sky_x, non_sky_y, 2]
 
         # create the sky dataframe
-        # TODO: speak with professor Giusti about it
         sky_df = pd.DataFrame(
             {'image_nr': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_x, 'y': sky_y, 'class': 1})
 
@@ -165,6 +164,7 @@ def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
     # plot the binary mask
     plt.imshow(binary_mask, cmap='gray', vmin=0, vmax=1)
 
+    # TODO: speak with professor Giusti about it
     plt.scatter(x=pixels['y'], y=pixels['x'], c=pixels['class'], cmap='bwr', s=1, alpha=0.8)
     # add a legend
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
@@ -229,17 +229,20 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     print("*" * 50)
 
 
-def has_sky(binary_mask: np.ndarray) -> bool:
+def has_sky_delta(binary_mask: np.ndarray, delta: int = 50) -> bool:
     """
     Auxiliary function to check if a binary mask has sky pixels.
     @param binary_mask: the binary mask to check the presence of sky pixels.
+    @param delta: the number of pixels to check around the center of the image.
     :return: bool: True if the image has sky pixels, False otherwise.
     """
+    # get the mask only inside the delta for the decision:
+    binary_mask = binary_mask[delta:-delta, delta:-delta]
     sky_pixels = np.argwhere(binary_mask == 1)
     return True if len(sky_pixels > 0) else False
 
 
-def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
+def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 50) \
         -> ([np.ndarray], [int], [int], [int]):
     """
     Function to get the patches from an image, and it's corresponding binary mask.
@@ -313,7 +316,7 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
     df = pd.DataFrame(columns=['image_nr', 'patch', 'class', 'center_x', 'center_y'])
     img_num: int = 0
     for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
-        if not has_sky(mask):  # Skip images with no sky
+        if not has_sky_delta(mask):  # Skip images with no sky
             continue
 
         patches, classes, centers_x, centers_y = get_patches(img, mask)
