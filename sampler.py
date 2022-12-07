@@ -61,7 +61,7 @@ def pixel_sampler(total_count: int, train: bool = True) -> pd.DataFrame:
     non_sky_sample = total_count / non_sky_count
 
     # create the training dataset
-    df = pd.DataFrame(columns=['image', 'r', 'g', 'b', 'x', 'y', 'class'])
+    df = pd.DataFrame(columns=['image_nr', 'r', 'g', 'b', 'x', 'y', 'class'])
 
     # get all the images in the path:
     images = []
@@ -121,11 +121,11 @@ def pixel_sampler(total_count: int, train: bool = True) -> pd.DataFrame:
         # create the sky dataframe
         # TODO: speak with professor Giusti about it
         sky_df = pd.DataFrame(
-            {'image': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_x, 'y': sky_y, 'class': 1})
+            {'image_nr': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_x, 'y': sky_y, 'class': 1})
 
         # create the non-sky dataframe
         non_sky_df = pd.DataFrame(
-            {'image': image_count, 'r': non_sky_r, 'g': non_sky_g, 'b': non_sky_b, 'x': non_sky_x, 'y': non_sky_y,
+            {'image_nr': image_count, 'r': non_sky_r, 'g': non_sky_g, 'b': non_sky_b, 'x': non_sky_x, 'y': non_sky_y,
              'class': 0})
 
         # concatenate the dataframes
@@ -157,6 +157,9 @@ def sampler_visual_inspector() -> None:
                title='Pixel Class')
     # add a title
     plt.title('Sampled pixels over the binary mask, extracted from the first image')
+    # save the plot
+    plt.savefig(Path(TRAINING_DATASET_PATH, 'sampled_pixels_from_image_0.png'))
+
     # show the plot
     plt.show()
 
@@ -172,6 +175,7 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     name = "Training" if train else "Testing"
 
     # print the number of rows and columns
+    print("*" * 50)
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe.shape[0]} rows and "
           f"{dataframe.shape[1]} columns.")
     # print the number of sky and non-sky pixels
@@ -179,7 +183,8 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
           f"sky pixels and "
           f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky pixels.")
     # print the number of images
-    print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image'].nunique()} images.")
+    print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
+    print("*" * 50)
 
 
 def has_sky(binary_mask: np.ndarray) -> bool:
@@ -263,7 +268,7 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
     # cast the binary mask to grayscale
     binary_masks = [skimage.color.rgb2gray(mask) for mask in binary_masks]
 
-    df = pd.DataFrame(columns=['image_num', 'patch', 'class', 'center_x', 'center_y'])
+    df = pd.DataFrame(columns=['image_nr', 'patch', 'class', 'center_x', 'center_y'])
     img_num: int = 0
     for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
         if not has_sky(mask):  # Skip images with no sky
@@ -271,7 +276,7 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
 
         patches, classes, centers_x, centers_y = get_patches(img, mask)
 
-        temp_df = pd.DataFrame({'image_num': img_num, 'patch': patches, 'class': classes,
+        temp_df = pd.DataFrame({'image_nr': img_num, 'patch': patches, 'class': classes,
                                 'center_x': centers_x, 'center_y': centers_y})
         df = pd.concat([df, temp_df], ignore_index=True)
 
