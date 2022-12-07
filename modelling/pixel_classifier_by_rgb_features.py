@@ -55,16 +55,16 @@ def main():
     log_reg = train_model(log_reg)
     knn = create_model(model_type='knn')
     knn = train_model(knn)
-    auc = evaluate_model(log_reg)
-    print(f'Logistic Regression AUC with RGB as features: {auc}')
-    auc = evaluate_model(knn)
-    print(f'KNN AUC with RBG as features: {auc}')
+    auc_log = evaluate_model(log_reg)
+    print(f'Logistic Regression AUC with RGB as features: {auc_log}')
+    auc_knn = evaluate_model(knn)
+    print(f'KNN AUC with RBG as features: {auc_knn}')
 
     # ensure that the results folder exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
     results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
-                            'auc': [auc, auc]})
+                            'auc': [auc_log, auc_knn]})
     results.to_csv(Path(RESULTS_PATH, 'pixel_classifier_by_rgb_as_feature.csv'), index=False)
 
 
