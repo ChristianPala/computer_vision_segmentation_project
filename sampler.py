@@ -147,7 +147,7 @@ def sampler_visual_inspector() -> None:
     # get the first binary mask
     mask: np.ndarray = skimage.io.imread(Path(TRAINING_DATASET_PATH, 'binary_mask_sky_0.png'))
     # get the pixels of the first image:
-    pixels: pd.DataFrame = train_df[train_df['image'] == 0]
+    pixels: pd.DataFrame = train_df[train_df['image_nr'] == 0]
     # map the target to sky and non-sky
     # plot the pixels over the binary mask:
     plt.imshow(mask)
@@ -174,14 +174,16 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     """
     name = "Training" if train else "Testing"
 
+    sample_type = "pixels" if sampling_type == "pixel" else "patch"
+
     # print the number of rows and columns
     print("*" * 50)
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe.shape[0]} rows and "
           f"{dataframe.shape[1]} columns.")
     # print the number of sky and non-sky pixels
-    print(f"{name} dataframe sampled by {sampling_type}  has {dataframe[dataframe['class'] == 1].shape[0]} "
-          f"sky pixels and "
-          f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky pixels.")
+    print(f"{name} dataframe sampled by {sampling_type} has {dataframe[dataframe['class'] == 1].shape[0]} "
+          f"sky {sample_type} and "
+          f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky {sampling_type}.")
     # print the number of images
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
     print("*" * 50)
