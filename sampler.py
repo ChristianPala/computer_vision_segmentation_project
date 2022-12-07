@@ -137,6 +137,44 @@ def pixel_sampler(total_count: int, train: bool = True) -> pd.DataFrame:
     return df
 
 
+def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
+                                        image_nr: int, train: bool = True) -> None:
+    """
+    Auxiliary function to plot the binary mask and the sampled pixels
+    @param pixel_dataframe: pd.DataFrame: the dataframe containing the sampled pixels
+    @param image_nr: the image number: int: the image number in the dataset
+    @param train: bool: True if the image is from the training dataset, False if it is from the testing dataset
+    :return: None. Plots the binary mask and the sampled pixels and saves the plot to the plots' folder.
+    """
+    # select and create the path:
+    path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
+    plots_path = Path(os.path.join(path, 'plots'))
+    plots_path.mkdir(parents=True, exist_ok=True)
+
+    # get the corresponding binary mask:
+    binary_mask = skimage.io.imread(os.path.join(path, f'binary_mask_sky_{image_nr}.png'))
+
+    # cast the binary mask to grayscale
+    binary_mask = skimage.color.rgb2gray(binary_mask)
+
+    # get the row of the image number:
+    pixels: pd.DataFrame = pixel_dataframe[pixel_dataframe['image_nr'] == image_nr]
+
+    # plot the binary mask
+    plt.imshow(binary_mask, cmap='gray', vmin=0, vmax=1)
+
+    plt.scatter(x=pixels['y'], y=pixels['x'], c=pixels['class'], cmap='bwr', s=1, alpha=0.8)
+    # add a legend
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
+               title='Pixel Class')
+    # add a title
+    plt.title(f'Sampled pixels over the binary mask, extracted from image: {image_nr}.')
+    # save the plot
+    plt.savefig(Path(TRAINING_DATASET_PATH, f'sampled_pixels_from_image_{image_nr}.png'))
+    # show the plot
+    plt.show()
+
+
 def sampler_visual_inspector() -> None:
     """
     Visually inspect the sampler to make sure it is working properly.
@@ -144,24 +182,9 @@ def sampler_visual_inspector() -> None:
     """
     # get the training dataset
     train_df: pd.DataFrame = pd.read_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'))
-    # get the first binary mask
-    mask: np.ndarray = skimage.io.imread(Path(TRAINING_DATASET_PATH, 'binary_mask_sky_0.png'))
-    # get the pixels of the first image:
-    pixels: pd.DataFrame = train_df[train_df['image_nr'] == 0]
-    # map the target to sky and non-sky
-    # plot the pixels over the binary mask:
-    plt.imshow(mask)
-    plt.scatter(x=pixels['y'], y=pixels['x'], c=pixels['class'], cmap='bwr', s=1, alpha=0.5)
-    # add a legend
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
-               title='Pixel Class')
-    # add a title
-    plt.title('Sampled pixels over the binary mask, extracted from the first image')
-    # save the plot
-    plt.savefig(Path(TRAINING_DATASET_PATH, 'sampled_pixels_from_image_0.png'))
-
-    # show the plot
-    plt.show()
+    # plot the binary mask and the sampled pixels
+    plot_binary_mask_and_sampled_pixels(train_df, 0)
+    plot_binary_mask_and_sampled_pixels(train_df, 1)
 
 
 def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = True) -> None:
@@ -184,6 +207,19 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe[dataframe['class'] == 1].shape[0]} "
           f"sky {sample_type} and "
           f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky {sampling_type}.")
+
+    if sampling_type == "pixel":
+        # print the number of sky and non-sky pixels per image
+        print(f"{name} dataframe sampled by {sampling_type} has "
+              f"{dataframe.groupby('image_nr')['class'].sum().mean():1.f} "
+              f"sky {sample_type} per image and "
+              f"{dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean():.1f} "
+              f"non-sky {sample_type} per image.")
+
+    elif sampling_type == "patch":
+        # print the patch size
+        print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch'].shape[0]} patches of size "
+              f"{dataframe['patch'].iloc[0].shape[0]}x{dataframe['patch'].iloc[0].shape[1]}.")
     # print the number of images
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
     print("*" * 50)
@@ -220,8 +256,8 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
     sky_count, non_sky_count = 0, 0
     for i in range(n_patches):
         while sky_count < 3:  # Get 3 sky patches
-            center_x = randint(delta, image.shape[0]-delta)
-            center_y = randint(delta, image.shape[1]-delta)
+            center_x = randint(delta, image.shape[0] - delta)
+            center_y = randint(delta, image.shape[1] - delta)
 
             class_value = binary_mask[center_x, center_y]
             if class_value == 1:
@@ -327,4 +363,3 @@ def main() -> None:
 # Driver Code
 if __name__ == '__main__':
     main()
-
