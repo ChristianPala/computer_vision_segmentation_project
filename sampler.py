@@ -172,7 +172,7 @@ def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
     # add a title
     plt.title(f'Sampled pixels over the binary mask, extracted from {name} image: {image_nr}.')
     # save the plot
-    plt.savefig(Path(path, f'sampled_pixels_from_image_{image_nr}.png'))
+    plt.savefig(Path(plots_path, f'sampled_pixels_from_image_{image_nr}.png'))
     # show the plot
     plt.show()
 
@@ -216,9 +216,9 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
         # print the number of sky and non-sky pixels per image
         print(f"{name} dataframe sampled by {sampling_type} has approximately "
               f"{int(dataframe.groupby('image_nr')['class'].sum().mean())} "
-              f"sky {sample_type} per image and approximately "
+              f"sky {sample_type}es per image and approximately "
               f"{int(dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean())} "
-              f"non-sky {sample_type} per image.")
+              f"non-sky {sample_type}es per image.")
 
     elif sampling_type == "patch":
         # print the patch size
