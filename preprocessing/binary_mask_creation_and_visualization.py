@@ -115,7 +115,8 @@ def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
     else:
         n_images = count_number_of_files(TESTING_DATASET_PATH)
         imgs_path = Path(TESTING_DATASET_PATH, f'binary_mask_{label}_')
-        [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=False)[1]))
+        [skimage.io.imsave(fname=f'{imgs_path}{i}.png',
+                           arr=binary_mask(get_image_and_segmentation(i, train=False)[1]))
          for i in range(n_images)]
 
 

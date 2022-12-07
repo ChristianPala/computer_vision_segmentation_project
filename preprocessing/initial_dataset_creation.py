@@ -25,7 +25,7 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     if not Path(INITIAL_DATASET_PATH).exists():
         raise FileNotFoundError(f"The initial dataset path {INITIAL_DATASET_PATH} does not exist."
                                 f"Please create it and try again.")
-    
+
     # Select training or testing dataset folder:
     im_path = Path(INITIAL_DATASET_PATH, "train") if train else Path(INITIAL_DATASET_PATH, "test")
     im_path.mkdir(exist_ok=True, parents=True)
