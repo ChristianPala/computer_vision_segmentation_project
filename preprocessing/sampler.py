@@ -239,7 +239,7 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     elif sampling_type == "patch":
         # print the patch size
         print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch'].shape[0]} patches of size "
-              f"{dataframe['patch'].iloc[0].shape[0]}x{dataframe['patch'].iloc[0].shape[1]}.")
+              f"{dataframe['patch'].iloc[0].shape[0]}x{dataframe['patch'].iloc[0].shape[0]}.")
     # print the number of images
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
     print("*" * 50)
@@ -258,19 +258,8 @@ def has_sky_delta(binary_mask: np.ndarray, delta: int = 50) -> bool:
     return True if len(sky_pixels > 0) else False
 
 
-def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 50) \
-        -> ([np.ndarray], [int], [int], [int]):
-    """
-    Function to get the patches from an image, and it's corresponding binary mask.
-    @param image: np.ndarray. The image to extract the patches from.
-    @param binary_mask: np.array. The binary mask to extract the patches from.
-    @param n_patches: int. The number of patches to extract.
-    @param delta: int. The number of pixels around the center of the patch to extract, from
-    each side.
-    :return: ([np.ndarray], [int], [int], [int]). A tuple containing the patches, the row coordinates
-    of the center of the patches, the column coordinates of the center of the patches, and the class of
-    the patches, defined as 1 if the center of the patch is in the sky, and 0 otherwise.
-    """
+def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
+        -> ([np.ndarray], [int]):
 
     patches: [np.ndarray] = []
     classes: [int] = []
@@ -279,8 +268,8 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
     sky_count, non_sky_count = 0, 0
     for i in range(n_patches):
         while sky_count < 3:  # Get 3 sky patches
-            center_row = randint(delta, image.shape[0] - delta)
-            center_column = randint(delta, image.shape[1] - delta)
+            center_row = randint(delta, image.shape[0]-delta)
+            center_column = randint(delta, image.shape[1]-delta)
 
             class_value = binary_mask[center_row, center_column]
             if class_value == 1:
@@ -308,13 +297,8 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
 
 
 def patch_sampler(train: bool = True) -> pd.DataFrame:
-    """
-    Function to sample random balanced patches from the images of the dataset.
-    @param train: bool: True if the dataset is the training dataset, False if it is the testing dataset.
-    :return: pd.DataFrame: the dataframe containing the sampled patches.
-    """
 
-    # get the images and the binary masks
+    # get all the images in the path:
     images, binary_masks = get_images_and_binary_masks(train=train)
 
     df = pd.DataFrame(columns=['image_nr', 'patch', 'class', 'center_x', 'center_y'])

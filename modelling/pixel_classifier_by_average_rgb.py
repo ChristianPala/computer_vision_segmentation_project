@@ -14,15 +14,15 @@ from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, RESULTS_PATH
 
 
 # Functions:
-def load_dataset(train: bool = True) -> pd.DataFrame:
+def load_dataset(classification_type: str = 'by_pixel', train: bool = True) -> pd.DataFrame:
     """
     Loads the dataset from the path
     @param train: True if the image is from the training dataset, False if it is from the testing dataset
+    @param classification_type: the type of classification from which to load the dataset
     :return: the dataset
     """
     path: Path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
     name: str = 'train' if train else 'test'
-    classification_type: str = 'by_pixel'
     df = pd.read_csv(Path(path, f'{name}_{classification_type}.csv'))
     # print the class distribution:
     print(f'{name} class distribution:')

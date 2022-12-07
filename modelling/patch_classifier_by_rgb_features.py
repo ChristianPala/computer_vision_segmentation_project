@@ -23,13 +23,15 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     @param train: True if the image is from the training dataset, False if it is from the testing dataset
     :return: the trained model
     """
-    df = load_dataset(train=train)
-    rgb = df[['r', 'g', 'b']]
-    y = df['class']
-    # for this second classifier we take the r, g, b values of each pixel as features:
-    x = np.array(rgb).reshape(-1, 3)
-    model.fit(x, y)
-    return model
+    df = load_dataset(classification_type="by_patch", train=train)
+    # convert df.patch in a numpy ndarray:
+    df['patch'] = df['patch'].apply(lambda x:
+                                    np.fromstring(
+                                        x.replace('\n', '')
+                                        .replace('[', '')
+                                        .replace(']', '')
+                                        .replace('  ', ' '), sep=' '))
+    print(df['patch'][0])
 
 
 def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
@@ -45,6 +47,7 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     # Evaluate the model on the AUC score:
     auc = roc_auc_score(y, model.predict(x))
     return auc
+
 
 def main():
     """
@@ -69,4 +72,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+
+    train_model(model=LogisticRegression(), train=True)
