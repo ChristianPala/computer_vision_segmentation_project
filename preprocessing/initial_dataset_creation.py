@@ -21,6 +21,11 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     @param train: whether we are creating the training dataset or the testing dataset.
     :return: None. Populates the initial dataset folder with the images and masks from the given city
     """
+    # Raise exception if the trainin path does not exist
+    if not Path(INITIAL_DATASET_PATH).exists():
+        raise FileNotFoundError(f"The initial dataset path {INITIAL_DATASET_PATH} does not exist."
+                                f"Please create it and try again.")
+    
     # Select training or testing dataset folder:
     im_path = Path(INITIAL_DATASET_PATH, "train") if train else Path(INITIAL_DATASET_PATH, "test")
     im_path.mkdir(exist_ok=True, parents=True)
