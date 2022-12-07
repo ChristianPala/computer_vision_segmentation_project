@@ -161,22 +161,25 @@ def sampler_visual_inspector() -> None:
     plt.show()
 
 
-def dataset_explorer(dataframe: pd.DataFrame, train: bool = True) -> None:
+def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = True) -> None:
     """
     Function to print information on the generated dataset
     @param dataframe: the dataframe to explore
+    @param sampling_type: the type of sampling used to generate the dataset, either 'pixel' or 'patch'.
     @param train: whether the dataframe is the training dataset or not
     :return: None. Prints some information.
     """
     name = "Training" if train else "Testing"
 
     # print the number of rows and columns
-    print(f"{name} dataframe has {dataframe.shape[0]} rows and {dataframe.shape[1]} columns.")
+    print(f"{name} dataframe sampled by {sampling_type} has {dataframe.shape[0]} rows and "
+          f"{dataframe.shape[1]} columns.")
     # print the number of sky and non-sky pixels
-    print(f"{name} dataframe has {dataframe[dataframe['class'] == 1].shape[0]} sky pixels and "
+    print(f"{name} dataframe sampled by {sampling_type}  has {dataframe[dataframe['class'] == 1].shape[0]} "
+          f"sky pixels and "
           f"{dataframe[dataframe['class'] == 0].shape[0]} non-sky pixels.")
     # print the number of images
-    print(f"{name} dataframe has {dataframe['image'].nunique()} images.")
+    print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image'].nunique()} images.")
 
 
 def has_sky(binary_mask: np.ndarray) -> bool:
@@ -288,9 +291,9 @@ def main() -> None:
     testing_pixels: int = 5000
 
     # sample 10000 pixels from the training dataset:
-    train_pixels_df: pd.DataFrame = pixel_sampler(training_pixels, train=True)
+    train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
     # sample 10000 pixels from the testing dataset:
-    test_pixels_df: pd.DataFrame = pixel_sampler(testing_pixels, train=False)
+    test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
 
     # save the sampled pixels:
     train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
@@ -300,8 +303,8 @@ def main() -> None:
     sampler_visual_inspector()
 
     # explore the pixel datasets:
-    dataset_explorer(train_pixels_df, train=True)
-    dataset_explorer(test_pixels_df, train=False)
+    dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
+    dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
 
     # Sample patches from the training and testing dataset for the patch classifier:
     train_patches_df = patch_sampler(train=True)
@@ -310,8 +313,8 @@ def main() -> None:
     test_patches_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_patch.csv'), index=False)
 
     # explore the patch datasets:
-    dataset_explorer(train_patches_df, train=True)
-    dataset_explorer(test_patches_df, train=False)
+    dataset_explorer(dataframe=train_patches_df, sampling_type="patch", train=True)
+    dataset_explorer(dataframe=test_patches_df, sampling_type="patch", train=False)
 
 
 # Driver Code
