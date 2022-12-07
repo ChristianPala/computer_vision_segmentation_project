@@ -88,6 +88,8 @@ def main():
     """
     log_reg = create_model(model_type='logistic_regression')
     log_reg = train_model(log_reg)
+    knn = create_model(model_type='knn')
+    knn = train_model(knn)
     auc = evaluate_model(log_reg)
     print(f'AUC: {auc:.3f}')
 

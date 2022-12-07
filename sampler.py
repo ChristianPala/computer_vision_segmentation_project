@@ -7,9 +7,12 @@ import numpy as np
 from glob import glob
 import skimage
 import pandas as pd
-from matplotlib import pyplot as plt
-from tqdm import tqdm
+# Randomness:
 from random import randint
+# Plotting:
+from matplotlib import pyplot as plt
+# Progress bar:
+from tqdm import tqdm
 
 # Global variables:
 from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
@@ -28,18 +31,21 @@ def compute_sampling_proportions(train: bool = True) -> (int, int):
     for mask_path in glob(os.path.join(path, 'binary_mask_*.png')):
         binary_masks.append(skimage.io.imread(mask_path))
 
+    # cast the binary mask to grayscale
+    binary_masks = [skimage.color.rgb2gray(mask) for mask in binary_masks]
+
     # compute the total number of pixels in the sky class
     total_sky_pixels = 0
     total_non_sky_pixels = 0
     for mask in binary_masks:
-        total_sky_pixels += np.sum(mask == 255)
-        total_non_sky_pixels += np.sum(mask != 255)
+        total_sky_pixels += np.sum(mask == 1)
+        total_non_sky_pixels += np.sum(mask != 1)
 
     # compute the sampling proportions to sample for each images
     return total_sky_pixels, total_non_sky_pixels
 
 
-def sample_pixels(total_count: int, train: bool = True) -> pd.DataFrame:
+def pixel_sampler(total_count: int, train: bool = True) -> pd.DataFrame:
     """
     Sample a balanced dataset, from two classes, from the images in the dataset.
     @param total_count: the total number of pixels to sample
@@ -131,9 +137,10 @@ def sample_pixels(total_count: int, train: bool = True) -> pd.DataFrame:
     return df
 
 
-def inspect_sampler() -> None:
+def sampler_visual_inspector() -> None:
     """
     Visually inspect the sampler to make sure it is working properly.
+    :return: None. Displays the sampled pixels on the first image in the dataset, as a sanity check.
     """
     # get the training dataset
     train_df: pd.DataFrame = pd.read_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'))
@@ -154,9 +161,11 @@ def inspect_sampler() -> None:
     plt.show()
 
 
-def explore_dataset(dataframe: pd.DataFrame, train: bool = True) -> None:
+def dataset_explorer(dataframe: pd.DataFrame, train: bool = True) -> None:
     """
     Function to print information on the generated dataset
+    @param dataframe: the dataframe to explore
+    @param train: whether the dataframe is the training dataset or not
     :return: None. Prints some information.
     """
     name = "Training" if train else "Testing"
@@ -170,14 +179,29 @@ def explore_dataset(dataframe: pd.DataFrame, train: bool = True) -> None:
     print(f"{name} dataframe has {dataframe['image'].nunique()} images.")
 
 
-def has_sky(mask: np.ndarray) -> bool:
-
-    sky_pixels = np.argwhere(mask == 1)
+def has_sky(binary_mask: np.ndarray) -> bool:
+    """
+    Auxiliary function to check if a binary mask has sky pixels.
+    @param binary_mask: the binary mask to check the presence of sky pixels.
+    :return: bool: True if the image has sky pixels, False otherwise.
+    """
+    sky_pixels = np.argwhere(binary_mask == 1)
     return True if len(sky_pixels > 0) else False
 
 
 def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
-        -> ([np.ndarray], [int]):
+        -> ([np.ndarray], [int], [int], [int]):
+    """
+    Function to get the patches from an image, and it's corresponding binary mask.
+    @param image: np.ndarray. The image to extract the patches from.
+    @param binary_mask: np.array. The binary mask to extract the patches from.
+    @param n_patches: int. The number of patches to extract.
+    @param delta: int. The number of pixels around the center of the patch to extract, from
+    each side.
+    :return: ([np.ndarray], [int], [int], [int]). A tuple containing the patches, the x coordinates
+    of the center of the patches, the y coordinates of the center of the patches, and the class of
+    the patches, defined as 1 if the center of the patch is in the sky, and 0 otherwise.
+    """
 
     patches: [np.ndarray] = []
     classes: [int] = []
@@ -215,6 +239,11 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
 
 
 def patch_sampler(train: bool = True) -> pd.DataFrame:
+    """
+    Function to sample random balanced patches from the images of the dataset.
+    @param train: bool: True if the dataset is the training dataset, False if it is the testing dataset.
+    :return: pd.DataFrame: the dataframe containing the sampled patches.
+    """
 
     path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
 
@@ -252,32 +281,37 @@ def main() -> None:
     Main function to sample pixels from the training dataset, and save them to a csv file.
     Confirms that the sampling is working properly by plotting the sampled pixels over the binary mask.
     Gives some information on the generated dataset.
+    :return: None. Saves the sampled datasets to csv files and displays some information about them.
     """
-    # sample amount of pixels from the training and testing dataset:
+    # sample amount of pixels from the training and testing dataset for the pixel classifier:
     training_pixels: int = 15000
     testing_pixels: int = 5000
 
-    # sample 10000 pixels from the training dataset
-    train_df: pd.DataFrame = sample_pixels(training_pixels, train=True)
-    # sample 10000 pixels from the testing dataset
-    test_df: pd.DataFrame = sample_pixels(testing_pixels, train=False)
+    # sample 10000 pixels from the training dataset:
+    train_pixels_df: pd.DataFrame = pixel_sampler(training_pixels, train=True)
+    # sample 10000 pixels from the testing dataset:
+    test_pixels_df: pd.DataFrame = pixel_sampler(testing_pixels, train=False)
 
-    # save the sampled pixels
-    train_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
-    test_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
+    # save the sampled pixels:
+    train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
+    test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
 
-    # inspect the sampled pixels
-    inspect_sampler()
+    # inspect the sampled pixels:
+    sampler_visual_inspector()
 
-    # explore the dataset
-    explore_dataset(train_df)
-    explore_dataset(test_df)
+    # explore the pixel datasets:
+    dataset_explorer(train_pixels_df, train=True)
+    dataset_explorer(test_pixels_df, train=False)
 
-    # Create dataset with patches
-    df_train = patch_sampler(train=True)
-    df_test = patch_sampler(train=False)
-    df_train.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_patch.csv'), index=False)
-    df_test.to_csv(Path(TESTING_DATASET_PATH, 'test_by_patch.csv'), index=False)
+    # Sample patches from the training and testing dataset for the patch classifier:
+    train_patches_df = patch_sampler(train=True)
+    test_patches_df = patch_sampler(train=False)
+    train_patches_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_patch.csv'), index=False)
+    test_patches_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_patch.csv'), index=False)
+
+    # explore the patch datasets:
+    dataset_explorer(train_patches_df, train=True)
+    dataset_explorer(test_patches_df, train=False)
 
 
 # Driver Code
