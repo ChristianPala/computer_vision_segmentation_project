@@ -24,15 +24,14 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     :return: the trained model
     """
     df = load_dataset(classification_type="by_patch", train=train)
-    # convert df.patch in a numpy ndarray:
-    df['patch'] = df['patch'].apply(lambda x:
-                                    np.fromstring(
-                                        x.replace('\n', '')
-                                        .replace('[', '')
-                                        .replace(']', '')
-                                        .replace('  ', ' '), sep=' '))
-    print(df['patch'][0])
 
+    patch_r = df[['patch_r']].values
+    patch_g = df[['patch_g']].values
+    patch_b = df[['patch_b']].values
+
+    patch_r = np.fromstring(patch_r, dtype=int)
+    print(patch_r)
+    return model
 
 def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     """
@@ -68,10 +67,8 @@ def main():
     # save the results:
     results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
                             'auc': [auc_log, auc_knn]})
-    results.to_csv(Path(RESULTS_PATH, 'pixel_classifier_by_rgb_as_feature.csv'), index=False)
+    results.to_csv(Path(RESULTS_PATH, 'patch_classifier_by_rgb_as_feature.csv'), index=False)
 
 
 if __name__ == '__main__':
-    # main()
-
-    train_model(model=LogisticRegression(), train=True)
+    main()

@@ -76,7 +76,6 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     rgb = df[['r', 'g', 'b']]
     x = np.array(rgb.mean(axis=1)).reshape(-1, 1)
     y = df['class']
-    # Todo: try using r, g b and patches. See if it improves the AUC score
     # Evaluate the model on the AUC score:
     auc = roc_auc_score(y, model.predict(x))
     return auc

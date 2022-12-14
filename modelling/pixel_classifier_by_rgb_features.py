@@ -6,9 +6,11 @@ from pathlib import Path
 import pandas as pd
 # Modelling:
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
 from modelling.pixel_classifier_by_average_rgb import load_dataset, create_model
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+
 
 # Global variables:
 from config import RESULTS_PATH
@@ -28,7 +30,10 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     y = df['class']
     # for this second classifier we take the r, g, b values of each pixel as features:
     x = np.array(rgb).reshape(-1, 3)
-    model.fit(x, y)
+    # split the data into train and test:
+    x_train, _, y_train, _ = train_test_split(x, y, test_size=0.3, random_state=42)
+    # train the model:
+    model.fit(x_train, y_train)
     return model
 
 
@@ -42,9 +47,12 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     rgb = df[['r', 'g', 'b']]
     x = np.array(rgb).reshape(-1, 3)
     y = df['class']
+    # split the data into train and test:
+    _, x_test, _, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
     # Evaluate the model on the AUC score:
-    auc = roc_auc_score(y, model.predict(x))
+    auc = roc_auc_score(y_test, model.predict(x_test))
     return auc
+
 
 def main():
     """

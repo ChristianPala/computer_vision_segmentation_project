@@ -238,8 +238,8 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
 
     elif sampling_type == "patch":
         # print the patch size
-        print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch'].shape[0]} patches of size "
-              f"{dataframe['patch'].iloc[0].shape[0]}x{dataframe['patch'].iloc[0].shape[0]}.")
+        print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch_r'].shape[0]} patches of size "
+              f"{dataframe['patch_r'].iloc[0].shape[0]}x{dataframe['patch_r'].iloc[0].shape[0]}.")
     # print the number of images
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
     print("*" * 50)
@@ -259,9 +259,11 @@ def has_sky_delta(binary_mask: np.ndarray, delta: int = 50) -> bool:
 
 
 def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
-        -> ([np.ndarray], [int]):
+        -> ([np.ndarray], [np.ndarray], [np.ndarray], [int], [int], [int]):
 
-    patches: [np.ndarray] = []
+    patches_r: [np.ndarray] = []
+    patches_g: [np.ndarray] = []
+    patches_b: [np.ndarray] = []
     classes: [int] = []
     centers_row: [int] = []
     centers_column: [int] = []
@@ -274,10 +276,14 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
             class_value = binary_mask[center_row, center_column]
             if class_value == 1:
                 classes.append(class_value)
-                patch = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta]
+                patch_r = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 0]
+                patch_g = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 1]
+                patch_b = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 2]
                 centers_row.append(center_row)
                 centers_column.append(center_column)
-                patches.append(patch)
+                patches_r.append(patch_r)
+                patches_g.append(patch_g)
+                patches_b.append(patch_b)
                 sky_count += 1
 
         while non_sky_count < 3:  # Get 3 non-sky patches
@@ -287,13 +293,17 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
             class_value = binary_mask[center_row, center_column]
             if class_value == 0:
                 classes.append(class_value)
-                patch = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta]
+                patch_r = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 0]
+                patch_g = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 1]
+                patch_b = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 2]
                 centers_row.append(center_row)
                 centers_column.append(center_column)
-                patches.append(patch)
+                patches_r.append(patch_r)
+                patches_g.append(patch_g)
+                patches_b.append(patch_b)
                 non_sky_count += 1
 
-    return patches, classes, centers_row, centers_column
+    return (patches_r, patches_g, patches_b), classes, centers_row, centers_column
 
 
 def patch_sampler(train: bool = True) -> pd.DataFrame:
@@ -301,7 +311,7 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
     # get all the images in the path:
     images, binary_masks = get_images_and_binary_masks(train=train)
 
-    df = pd.DataFrame(columns=['image_nr', 'patch', 'class', 'center_x', 'center_y'])
+    df = pd.DataFrame(columns=['image_nr', 'patch_r', 'patch_g', 'patch_b', 'class', 'center_x', 'center_y'])
     img_num: int = 0
     for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
         if not has_sky_delta(mask):  # Skip images with no sky
@@ -309,8 +319,11 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
 
         patches, classes, centers_row, centers_column = get_patches(img, mask)
 
-        temp_df = pd.DataFrame({'image_nr': img_num, 'patch': patches, 'class': classes,
-                                'center_x': centers_column, 'center_y': centers_row})
+        # unpack the patches:
+        patches_r, patches_g, patches_b = patches
+
+        temp_df = pd.DataFrame({'image_nr': img_num, 'patch_r': patches_r, 'patch_g': patches_g, 'patch_b': patches_b,
+                                'class': classes, 'center_x': centers_column, 'center_y': centers_row})
         df = pd.concat([df, temp_df], ignore_index=True)
 
         img_num += 1
@@ -358,3 +371,4 @@ def main() -> None:
 # Driver Code
 if __name__ == '__main__':
     main()
+
