@@ -24,11 +24,8 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     :return: the trained model
     """
     df = load_dataset(classification_type="by_patch", train=train)
-
     x = df['patch']
-
     y = df['class']
-
     model.fit(x, y)
 
     return model

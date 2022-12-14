@@ -234,12 +234,12 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
               f"{int(dataframe.groupby('image_nr')['class'].sum().mean())} "
               f"sky {sample_type}es per image and approximately "
               f"{int(dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean())} "
-              f"non-sky {sample_type}es per image.")
+              f"non-sky {sample_type} per image.")
 
     elif sampling_type == "patch":
         # print the patch size
-        print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch_r'].shape[0]} patches of size "
-              f"{dataframe['patch_r'].iloc[0].shape[0]}x{dataframe['patch_r'].iloc[0].shape[0]}.")
+        print(f"{name} dataframe sampled by {sampling_type} has {dataframe['patch'].shape[0]} patches of size "
+              f"{dataframe['patch'].iloc[0].shape[0]}x{dataframe['patch'].iloc[0].shape[0]}.")
     # print the number of images
     print(f"{name} dataframe sampled by {sampling_type} has {dataframe['image_nr'].nunique()} images.")
     print("*" * 50)
@@ -332,32 +332,32 @@ def main() -> None:
     :return: None. Saves the sampled datasets to csv files and displays some information about them.
     """
     # sample amount of pixels from the training and testing dataset for the pixel classifier:
-    training_pixels: int = 15000
-    testing_pixels: int = 5000
-
-    # sample 10000 pixels from the training dataset:
-    train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
-    # sample 10000 pixels from the testing dataset:
-    test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
-
-    # save the sampled pixels:
-    train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
-    test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
-
-    # inspect the sampled pixels:
-    sampler_visual_inspector(training=True)
-
-    # explore the pixel datasets:
-    dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
-    dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
+    # training_pixels: int = 15000
+    # testing_pixels: int = 5000
+    #
+    # # sample 10000 pixels from the training dataset:
+    # train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
+    # # sample 10000 pixels from the testing dataset:
+    # test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
+    #
+    # # save the sampled pixels:
+    # train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
+    # test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
+    #
+    # # inspect the sampled pixels:
+    # sampler_visual_inspector(training=True)
+    #
+    # # explore the pixel datasets:
+    # dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
+    # dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
 
     # Sample patches from the training and testing dataset for the patch classifier:
     train_patches_df = patch_sampler(train=True)
     test_patches_df = patch_sampler(train=False)
 
     # save the sampled patches as pickle files to preserve the image data:
-    train_patches_df.to_pickle(Path(TRAINING_DATASET_PATH, 'train_by_patch.pkl'), index=False)
-    test_patches_df.to_pickle(Path(TESTING_DATASET_PATH, 'test_by_patch.pkl'), index=False)
+    train_patches_df.to_pickle(Path(TRAINING_DATASET_PATH, 'train_by_patch.pkl'))
+    test_patches_df.to_pickle(Path(TESTING_DATASET_PATH, 'test_by_patch.pkl'))
 
     # explore the patch datasets:
     dataset_explorer(dataframe=train_patches_df, sampling_type="patch", train=True)
