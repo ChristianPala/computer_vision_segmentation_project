@@ -20,31 +20,31 @@ from modelling.pixel_classifier_by_average_rgb import load_dataset
 # Global variables:
 from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
 PATCH_SIZE = 512
-
 # Ensure the directory exists:
 Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
-
 # Tensorflow logging level:
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-def create_model():
-
-    # parameters:
-    dropout_rate = 0.1
-    dense_layer_size_1 = 512
-    dense_layer_size_2 = 256
+def create_model(nr_neurons_layer_1: int = 512, nr_neurons_layer_2: int = 256, dropout_rate: float = 0.1) -> Sequential:
+    """
+    Create a feed forward neural network with 2 hidden layers and a sigmoid output layer.
+    @param nr_neurons_layer_1: number of neurons in the first hidden layer
+    @param nr_neurons_layer_2: number of neurons in the second hidden layer
+    @param dropout_rate: dropout rate
+    :return: Sequential: the model.
+    """
 
     # Create a fully connected model:
     model = Sequential()
     # the input layer are 369 patches of 512x512 pixels, each with 3 channels (RGB):
     model.add(Flatten(input_shape=(PATCH_SIZE, PATCH_SIZE, 3)))
     # add a dense layer:
-    model.add(Dense(dense_layer_size_1, activation='relu'))
+    model.add(Dense(nr_neurons_layer_1, activation='relu'))
     # add a dropout layer to prevent over-fitting:
     model.add(Dropout(dropout_rate))
     # second dense layer:
-    model.add(Dense(dense_layer_size_2, activation='relu'))
+    model.add(Dense(nr_neurons_layer_2, activation='relu'))
     # add a dropout layer to prevent over-fitting:
     model.add(Dropout(dropout_rate))
     # the output layer is a binary mask of 512x512 pixels, 0 for background and 1 for sky:
@@ -59,8 +59,18 @@ def create_model():
 
 
 def visualize_segmentation(image: np.ndarray, generated_segmentation: np.ndarray, binary_mask: np.ndarray,
-                           title: str, save: bool = False,
-                           path: Union[str, Path] = None):
+                           title: str, path: Union[str, Path], save: bool = False) -> None:
+    """
+    Visualize the segmentation of an image superimposed on the original image.
+    show the binary mask on the right.
+    @param image: np.ndarray: the original image
+    @param generated_segmentation: np.ndarray: the generated segmentation
+    @param binary_mask: np.ndarray: the binary mask of the image
+    @param title: str: the title of the plot
+    @param save: bool: whether to save the plot
+    @param path: Path or str: the path to save the plot to
+    :return: None, shows the plot and optionally saves it.
+    """
 
     # plot the image and superimpose the segmentation, add the binary mask as a subplot:
     fig = plt.figure(figsize=(10, 10))
@@ -83,6 +93,10 @@ def visualize_segmentation(image: np.ndarray, generated_segmentation: np.ndarray
 
 
 def main():
+    """
+    Main function to segment an image by classifying each pixel with a feed forward neural network.
+    :return: None, saves the AUC score in the results' folder.
+    """
 
     train = load_dataset(classification_type='by_patch', train=True)
     test = load_dataset(classification_type='by_patch', train=False)
@@ -139,5 +153,6 @@ def main():
                                                     f'test_image_{i}_segmentation_by_pixel_classification.png'))
 
 
+# Driver Code:
 if __name__ == '__main__':
     main()
