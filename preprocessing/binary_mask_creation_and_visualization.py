@@ -43,14 +43,16 @@ def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) 
     return im, segmentation
 
 
-def visualize_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> None:
+def visualize_image_and_segmentation(img_number: Union[str, int] = 1, train: bool = True,
+                                     im: np.ndarray = None, segmentation: np.ndarray = None) -> None:
     """
     Plots side-by-side the image corresponding to the given number and its full segmentation.
     @param: img_number: Index of the image desired to be plotted.
     :return: None. It plots directly the corresponding images.
     """
     # Get the actual image and segmentation as numpy ndarrays
-    im, segmentation = get_image_and_segmentation(img_number, train)
+    if (im is None) and (segmentation is None):
+        im, segmentation = get_image_and_segmentation(img_number, train)
 
     # Plot the image and its segmentation side-by-side
     fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)

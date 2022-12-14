@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from modelling.pixel_classifier_by_average_rgb import load_dataset, create_model
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from keras.models import Sequential
 
 
 # Global variables:
@@ -17,7 +18,7 @@ from config import RESULTS_PATH
 
 
 # Functions:
-def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool = True) \
+def train_model(model: LogisticRegression or KNeighborsClassifier or Sequential, train: bool = True) \
         -> LogisticRegression or KNeighborsClassifier:
     """
     Trains the model on the dataset
@@ -33,7 +34,10 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     # split the data into train and test:
     x_train, _, y_train, _ = train_test_split(x, y, test_size=0.3, random_state=42)
     # train the model:
-    model.fit(x_train, y_train)
+    if model is Sequential:
+        model.fit(x_train, y_train, epochs=100, batch_size=32)
+    else:
+        model.fit(x_train, y_train)
     return model
 
 
