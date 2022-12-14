@@ -245,7 +245,7 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     print("*" * 50)
 
 
-def has_sky_delta(binary_mask: np.ndarray, delta: int = 50) -> bool:
+def has_sky_delta(binary_mask: np.ndarray, delta: int = 256) -> bool:
     """
     Auxiliary function to check if a binary mask has sky pixels.
     @param binary_mask: the binary mask to check the presence of sky pixels.
@@ -258,12 +258,11 @@ def has_sky_delta(binary_mask: np.ndarray, delta: int = 50) -> bool:
     return True if len(sky_pixels > 0) else False
 
 
-def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 5) \
-        -> ([np.ndarray], [np.ndarray], [np.ndarray], [int], [int], [int]):
+def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 256) \
+        -> ([np.ndarray], [np.ndarray], [int], [int], [int]):
 
-    patches_r: [np.ndarray] = []
-    patches_g: [np.ndarray] = []
-    patches_b: [np.ndarray] = []
+    patches: [np.ndarray] = []
+    mask_labels: [np.ndarray] = []
     classes: [int] = []
     centers_row: [int] = []
     centers_column: [int] = []
@@ -276,14 +275,12 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
             class_value = binary_mask[center_row, center_column]
             if class_value == 1:
                 classes.append(class_value)
-                patch_r = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 0]
-                patch_g = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 1]
-                patch_b = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, 2]
+                patch = image[center_row-delta:center_row+delta, center_column-delta:center_column+delta, :]
+                mask_label = binary_mask[center_row-delta:center_row+delta, center_column-delta:center_column+delta]
                 centers_row.append(center_row)
                 centers_column.append(center_column)
-                patches_r.append(patch_r)
-                patches_g.append(patch_g)
-                patches_b.append(patch_b)
+                patches.append(patch)
+                mask_labels.append(mask_label)
                 sky_count += 1
 
         while non_sky_count < 3:  # Get 3 non-sky patches
@@ -293,17 +290,16 @@ def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, 
             class_value = binary_mask[center_row, center_column]
             if class_value == 0:
                 classes.append(class_value)
-                patch_r = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 0]
-                patch_g = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 1]
-                patch_b = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, 2]
+                patch = image[center_row - delta: center_row + delta, center_column - delta: center_column + delta, :]
+                mask_label = binary_mask[center_row - delta: center_row + delta,
+                             center_column - delta: center_column + delta]
                 centers_row.append(center_row)
                 centers_column.append(center_column)
-                patches_r.append(patch_r)
-                patches_g.append(patch_g)
-                patches_b.append(patch_b)
+                patches.append(patch)
+                mask_labels.append(mask_label)
                 non_sky_count += 1
 
-    return (patches_r, patches_g, patches_b), classes, centers_row, centers_column
+    return patches, mask_labels, classes, centers_row, centers_column
 
 
 def patch_sampler(train: bool = True) -> pd.DataFrame:
@@ -311,22 +307,20 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
     # get all the images in the path:
     images, binary_masks = get_images_and_binary_masks(train=train)
 
-    df = pd.DataFrame(columns=['image_nr', 'patch_r', 'patch_g', 'patch_b', 'class', 'center_x', 'center_y'])
+    df = pd.DataFrame(columns=['image_nr', 'patch', 'class', 'center_x', 'center_y'])
     img_num: int = 0
     for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
         if not has_sky_delta(mask):  # Skip images with no sky
             continue
 
-        patches, classes, centers_row, centers_column = get_patches(img, mask)
+        patches, mask_labels, classes, centers_row, centers_column = get_patches(img, mask)
 
-        # unpack the patches:
-        patches_r, patches_g, patches_b = patches
-
-        temp_df = pd.DataFrame({'image_nr': img_num, 'patch_r': patches_r, 'patch_g': patches_g, 'patch_b': patches_b,
+        temp_df = pd.DataFrame({'image_nr': img_num, 'patch': patches, 'mask_labels': mask_labels,
                                 'class': classes, 'center_x': centers_column, 'center_y': centers_row})
         df = pd.concat([df, temp_df], ignore_index=True)
 
         img_num += 1
+
     return df
 
 
@@ -360,8 +354,10 @@ def main() -> None:
     # Sample patches from the training and testing dataset for the patch classifier:
     train_patches_df = patch_sampler(train=True)
     test_patches_df = patch_sampler(train=False)
-    train_patches_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_patch.csv'), index=False)
-    test_patches_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_patch.csv'), index=False)
+
+    # save the sampled patches as pickle files to preserve the image data:
+    train_patches_df.to_pickle(Path(TRAINING_DATASET_PATH, 'train_by_patch.pkl'), index=False)
+    test_patches_df.to_pickle(Path(TESTING_DATASET_PATH, 'test_by_patch.pkl'), index=False)
 
     # explore the patch datasets:
     dataset_explorer(dataframe=train_patches_df, sampling_type="patch", train=True)

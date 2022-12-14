@@ -25,13 +25,14 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     """
     df = load_dataset(classification_type="by_patch", train=train)
 
-    patch_r = df[['patch_r']].values
-    patch_g = df[['patch_g']].values
-    patch_b = df[['patch_b']].values
+    x = df['patch']
 
-    patch_r = np.fromstring(patch_r, dtype=int)
-    print(patch_r)
+    y = df['class']
+
+    model.fit(x, y)
+
     return model
+
 
 def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     """
@@ -40,8 +41,7 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     :return: the AUC score of the model
     """
     df = load_dataset(train=False)
-    rgb = df[['r', 'g', 'b']]
-    x = np.array(rgb).reshape(-1, 3)
+    x = df['patch']
     y = df['class']
     # Evaluate the model on the AUC score:
     auc = roc_auc_score(y, model.predict(x))
