@@ -91,8 +91,13 @@ def main() -> None:
     # train the model:
     model.fit(x_train, y_train, epochs=10)
 
+    # predict the test data:
+    y_pred = model.predict(x_test)
+    # categorize the predictions:
+    y_pred = np.where(y_pred > 0.5, 1, 0)
+
     # Evaluate the model on the AUC score:
-    auc = roc_auc_score(y_test, model.predict(x_test))
+    auc = roc_auc_score(y_test, y_pred)
 
     print(f'Fully connected AUC with patch RGB values as features: {auc}')
 
