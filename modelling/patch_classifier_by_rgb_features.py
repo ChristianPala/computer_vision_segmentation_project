@@ -7,63 +7,57 @@ import pandas as pd
 # Modelling:
 from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset, create_model
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
+from tensorflow.keras.models import Sequential
+import tensorflow as tf
 
 # Global variables:
 from config import RESULTS_PATH
 
 
 # Functions:
-def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool = True) \
-        -> LogisticRegression or KNeighborsClassifier:
-    """
-    Trains the model on the dataset
-    @param model: the model to train
-    @param train: True if the image is from the training dataset, False if it is from the testing dataset
-    :return: the trained model
-    """
-    df = load_dataset(classification_type="by_patch", train=train)
-    x = df['patch']
-    y = df['class']
-    model.fit(x, y)
-
-    return model
-
-
-def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
-    """
-    Evaluates the model on the dataset
-    @param model: the model to evaluate
-    :return: the AUC score of the model
-    """
-    df = load_dataset(train=False)
-    x = df['patch']
-    y = df['class']
-    # Evaluate the model on the AUC score:
-    auc = roc_auc_score(y, model.predict(x))
-    return auc
-
-
 def main():
     """
-    The main function to run the evaluation of the second classifier
+    Main routine to run the evaluation of the second classifier
     :return: None. Prints the AUC score of the model
     """
-    log_reg = create_model(model_type='logistic_regression')
-    log_reg = train_model(log_reg)
-    knn = create_model(model_type='knn')
-    knn = train_model(knn)
-    auc_log = evaluate_model(log_reg)
-    print(f'Logistic Regression AUC with RGB as features: {auc_log}')
-    auc_knn = evaluate_model(knn)
-    print(f'KNN AUC with RBG as features: {auc_knn}')
+    # Load the dataset:
+    train = load_dataset(classification_type="by_patch", train=True)
+    test = load_dataset(classification_type="by_patch", train=False)
+
+    # get the features and labels:
+    x_train = train['patch']
+    y_train = train['class']
+    x_test = test['patch']
+    y_test = test['class']
+
+    # reshape the data:
+    x_train = np.array(x_train.tolist()).reshape((-1, 512, 512, 3)).astype(np.float32) / 255
+    x_test = np.array(x_test.tolist()).reshape((-1, 512, 512, 3)).astype(np.float32) / 255
+
+    # Create a fully connected model:
+    model = Sequential()
+    # the input layer are 369 patches of 512x512 pixels, each with 3 channels (RGB):
+    model.add(tf.keras.layers.Flatten(input_shape=(512, 512, 3)))
+    # the hidden layer has 128 neurons:
+    model.add(tf.keras.layers.Dense(128, activation='relu'))
+    # the output layer has 1 neuron:
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    # compile the model:
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # train the model:
+    model.fit(x_train, y_train, epochs=10)
+
+    # Evaluate the model on the AUC score:
+    auc = roc_auc_score(y_test, model.predict(x_test))
+
+    print(f'Fully connected AUC with patch RGB values as features: {auc}')
 
     # ensure that the results folder exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
-    results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
-                            'auc': [auc_log, auc_knn]})
+    results = pd.DataFrame({'model': ['logistic_regression'],
+                            'auc': [auc]})
     results.to_csv(Path(RESULTS_PATH, 'patch_classifier_by_rgb_as_feature.csv'), index=False)
 
 

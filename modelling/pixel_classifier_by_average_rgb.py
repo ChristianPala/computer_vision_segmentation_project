@@ -23,7 +23,15 @@ def load_dataset(classification_type: str = 'by_pixel', train: bool = True) -> p
     """
     path: Path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
     name: str = 'train' if train else 'test'
-    df = pd.read_csv(Path(path, f'{name}_{classification_type}.csv'))
+
+    if classification_type == 'by_pixel':
+        df = pd.read_csv(Path(path, f'{name}_by_pixel.csv'))
+    elif classification_type == 'by_patch':
+        # load the pickle file:
+        df = pd.read_pickle(Path(path, f'{name}_by_patch.pkl'))
+    else:
+        raise ValueError(f'Unknown classification type: {classification_type}')
+
     # print the class distribution:
     print(f'{name} class distribution:')
     print(df['class'].value_counts())
