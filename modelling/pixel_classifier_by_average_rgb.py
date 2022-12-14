@@ -32,10 +32,6 @@ def load_dataset(classification_type: str = 'by_pixel', train: bool = True) -> p
     else:
         raise ValueError(f'Unknown classification type: {classification_type}')
 
-    # print the class distribution:
-    print(f'{name} class distribution:')
-    print(df['class'].value_counts())
-
     return df
 
 

@@ -2,28 +2,26 @@
 # Libraries:
 # Data manipulation:
 from pathlib import Path
-import glob
 import pandas as pd
 import numpy as np
+import os
 # Modelling:
-import skimage
-import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Dropout, Reshape
+from keras.layers import Dense, Flatten, Dropout, Reshape
 # Typings
 from typing import Union
 # Plots
 import matplotlib.pyplot as plt
+# Metrics:
 from sklearn.metrics import roc_auc_score
-
 # Utility functions
 from modelling.pixel_classifier_by_average_rgb import load_dataset
-from preprocessing.binary_mask_creation_and_visualization import visualize_image_and_segmentation,\
-                                                                    get_image_and_segmentation
-
 
 # Global variables:
 from config import RESULTS_PATH
+
+# Tensorflow logging level:
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def create_model():
@@ -56,26 +54,15 @@ def create_model():
     return model
 
 
+def visualize_segmentation(image: np.ndarray, segmentation: np.ndarray, title: str):
 
-def classify_image(model: Sequential, img_number: Union[str, int] = 1):
-
-    # Get the requested image and its segmentation
-    # todo: use data from test_by_pixel.pkl
-    img, segm = get_image_and_segmentation(img_number=img_number, train=False)
-    x_dim = img.shape[0]
-    y_dim = img.shape[1]
-
-    # Classify by pixel the image
-    classified_img = np.zeros(x_dim, y_dim)
-    for r in range(x_dim):
-        for c in range(y_dim):
-            pred = model.predict(img)
-            classified_img[r][c] = pred
-
-    # Visualize the classified image and the true segmentation side-ny-side
-    visualize_image_and_segmentation(im=classified_img, segmentation=segm)
-
-    return classified_img
+    # plot the image and the segmentation:
+    fig, ax = plt.subplots(1, 2, figsize=(10, 10))
+    ax[0].imshow(image, vmin=0, vmax=1)
+    ax[1].imshow(segmentation, vmin=0, vmax=1)
+    # center the title:
+    fig.suptitle(title, fontsize=16, y=0.95)
+    plt.show()
 
 
 def main():
@@ -104,13 +91,27 @@ def main():
     model.fit(x_train, y_train, epochs=10, batch_size=32)
 
     # evaluate the model on the AUC metric:
-    # first ravel the predictions and the true labels:
-    y_pred = model.predict(x_test).ravel()
-    y_true = y_test.ravel()
+    y_pred = model.predict(x_test)
+    y_pred_flat = y_pred.ravel()
+    y_true = y_test
+    y_true_flat = y_true.ravel()
     # calculate the AUC:
-    auc = roc_auc_score(y_true, y_pred)
+    auc = roc_auc_score(y_true_flat, y_pred_flat)
 
     print(f'The AUC on the test set is: {auc}')
+
+    # ensure the results directory exists:
+    Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
+    # save the results:
+    results = pd.DataFrame({'model': ['dense'], 'auc': [auc]})
+    results.to_csv(Path(RESULTS_PATH, 'patch_segmentation_by_pixel_classification.csv'), index=False)
+
+    # get the first image and the first resulting segmentation:
+    image = x_test[0]
+    segmentation = y_pred[0]
+
+    # visualize the segmentation:
+    visualize_segmentation(image, segmentation, title='Segmentation by pixel classification on test image 1')
 
 
 if __name__ == '__main__':
