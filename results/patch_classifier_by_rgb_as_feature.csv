@@ -1,2 +1,2 @@
 model,auc
-logistic_regression,0.9070987654320988
+Feed forward neural network with RGB values as features,0.9266666666666667

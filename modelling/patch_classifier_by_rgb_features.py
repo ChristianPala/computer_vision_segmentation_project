@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset, create_model
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Flatten
 import tensorflow as tf
 
 # Global variables:
@@ -15,7 +16,54 @@ from config import RESULTS_PATH
 
 
 # Functions:
-def main():
+def preprocess_data(x, y):
+    """
+    Preprocess the data to be used in the model
+    :param x: the features
+    :param y: the labels
+    :return: the preprocessed features and labels
+    """
+    # reshape the data:
+    x = np.array(x.tolist()).reshape((-1, 512, 512, 3)).astype(np.float32) / 255
+    y = np.array(y.tolist()).reshape((-1, 1)).astype(np.float32)
+
+    return x, y
+
+
+def create_feed_forward_model(x_shape: int, y_shape: int, channels: int) -> Sequential:
+    """
+    Create a feed forward model
+    :param x_shape: the shape of the x-axis of the image
+    :param y_shape: the shape of the y-axis of the image
+    :param channels: the number of channels in the image
+    :return: Sequential: the model
+    """
+    # parameters:
+    dropout_rate = 0.1
+    dense_layer_size_1 = 512
+    dense_layer_size_2 = 256
+
+    # Create a fully connected model:
+    model = Sequential()
+    # the input layer are 369 patches of 512x512 pixels, each with 3 channels (RGB):
+    model.add(Flatten(input_shape=(x_shape, y_shape, channels)))
+    # add a dense layer:
+    model.add(Dense(dense_layer_size_1, activation='relu'))
+    # add a dropout layer to prevent over-fitting:
+    model.add(Dropout(dropout_rate))
+    # second dense layer:
+    model.add(Dense(dense_layer_size_2, activation='relu'))
+    # add a dropout layer to prevent over-fitting:
+    model.add(Dropout(dense_layer_size_2))
+    # the output layer has 1 neuron since it's a binary classification:
+    model.add(Dense(1, activation='sigmoid'))
+    # compile the model:
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
+    
+    return model
+
+
+def main() -> None:
     """
     Main routine to run the evaluation of the second classifier
     :return: None. Prints the AUC score of the model
@@ -24,26 +72,21 @@ def main():
     train = load_dataset(classification_type="by_patch", train=True)
     test = load_dataset(classification_type="by_patch", train=False)
 
-    # get the features and labels:
+    # get the raw features and labels:
     x_train = train['patch']
     y_train = train['class']
     x_test = test['patch']
     y_test = test['class']
 
-    # reshape the data:
-    x_train = np.array(x_train.tolist()).reshape((-1, 512, 512, 3)).astype(np.float32) / 255
-    x_test = np.array(x_test.tolist()).reshape((-1, 512, 512, 3)).astype(np.float32) / 255
+    # preprocess the data:
+    x_train, y_train = preprocess_data(x_train, y_train)
+    x_test, y_test = preprocess_data(x_test, y_test)
 
-    # Create a fully connected model:
-    model = Sequential()
-    # the input layer are 369 patches of 512x512 pixels, each with 3 channels (RGB):
-    model.add(tf.keras.layers.Flatten(input_shape=(512, 512, 3)))
-    # the hidden layer has 128 neurons:
-    model.add(tf.keras.layers.Dense(128, activation='relu'))
-    # the output layer has 1 neuron:
-    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
-    # compile the model:
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # get the shape of a single image for the network input:
+    x_shape, y_shape, channels = x_train[0].shape[0], x_train[0].shape[1], x_train[0].shape[2]
+
+    # create the model:
+    model = create_feed_forward_model(x_shape, y_shape, channels)
 
     # train the model:
     model.fit(x_train, y_train, epochs=10)
@@ -56,10 +99,11 @@ def main():
     # ensure that the results folder exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
-    results = pd.DataFrame({'model': ['logistic_regression'],
+    results = pd.DataFrame({'model': ['Feed forward neural network with RGB values as features'],
                             'auc': [auc]})
     results.to_csv(Path(RESULTS_PATH, 'patch_classifier_by_rgb_as_feature.csv'), index=False)
 
 
+# Driver code:
 if __name__ == '__main__':
     main()
