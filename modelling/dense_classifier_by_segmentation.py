@@ -18,7 +18,10 @@ from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
-from config import RESULTS_PATH
+from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
+
+# Ensure the directory exists:
+Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
 
 # Tensorflow logging level:
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -54,14 +57,23 @@ def create_model():
     return model
 
 
-def visualize_segmentation(image: np.ndarray, segmentation: np.ndarray, title: str):
+def visualize_segmentation(image: np.ndarray, segmentation: np.ndarray, title: str, save: bool = False,
+                           path: Union[str, Path] = None):
 
     # plot the image and the segmentation:
     fig, ax = plt.subplots(1, 2, figsize=(10, 10))
-    ax[0].imshow(image, vmin=0, vmax=1)
-    ax[1].imshow(segmentation, vmin=0, vmax=1)
+    ax[0].imshow(image, vmin=0, vmax=1, cmap='gray')
+    ax[1].imshow(segmentation, vmin=0, vmax=1, cmap='gray')
     # center the title:
     fig.suptitle(title, fontsize=16, y=0.95)
+    # remove the axis:
+    ax[0].axis('off')
+    ax[1].axis('off')
+
+    # save the plot:
+    if save:
+        plt.imsave(path, image)
+
     plt.show()
 
 
@@ -92,26 +104,33 @@ def main():
 
     # evaluate the model on the AUC metric:
     y_pred = model.predict(x_test)
+    # get the categorical predictions:
+    y_pred = np.where(y_pred > 0.5, 1, 0)
+    # flatten for the AUC metric:
     y_pred_flat = y_pred.ravel()
-    y_true = y_test
-    y_true_flat = y_true.ravel()
+    y_test_flat = y_test.ravel()
     # calculate the AUC:
-    auc = roc_auc_score(y_true_flat, y_pred_flat)
+    auc_ff_nn = roc_auc_score(y_test_flat, y_pred_flat)
 
-    print(f'The AUC on the test set is: {auc}')
+    print(f'The AUC on the test set is: {auc_ff_nn}')
 
     # ensure the results directory exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
-    results = pd.DataFrame({'model': ['dense'], 'auc': [auc]})
+    results = pd.DataFrame({'model':  ['dense'], 'auc': [auc_ff_nn]})
     results.to_csv(Path(RESULTS_PATH, 'patch_segmentation_by_pixel_classification.csv'), index=False)
 
-    # get the first image and the first resulting segmentation:
-    image = x_test[0]
-    segmentation = y_pred[0]
-
-    # visualize the segmentation:
-    visualize_segmentation(image, segmentation, title='Segmentation by pixel classification on test image 1')
+    # get 3 random images from the test set:
+    random_indexes = np.random.choice(range(len(x_test)), 3)
+    for i in random_indexes:
+        # get the image and the segmentation:
+        image = x_test[i]
+        segmentation = y_pred[i]
+        # visualize the image and the segmentation:
+        visualize_segmentation(image, segmentation, f'Test image {i} segmentation by pixel classification',
+                               save=True,
+                               path=Path(SAMPLE_IMAGE_RESULTS_PATH,
+                                         f'test_image_{i}_segmentation_by_pixel_classification.png'))
 
 
 if __name__ == '__main__':
