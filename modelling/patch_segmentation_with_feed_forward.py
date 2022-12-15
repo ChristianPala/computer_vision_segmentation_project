@@ -19,7 +19,8 @@ from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
 from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
-PATCH_SIZE = 512
+PATCH_SIZE = 512  # the size of the patches extracted from the images:
+
 # Ensure the directory exists:
 Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
 # Tensorflow logging level:
@@ -72,21 +73,30 @@ def visualize_segmentation(image: np.ndarray, generated_segmentation: np.ndarray
     :return: None, shows the plot and optionally saves it.
     """
 
-    # plot the image and superimpose the segmentation, add the binary mask as a subplot:
-    fig = plt.figure(figsize=(10, 10))
-    ax1 = fig.add_subplot(1, 2, 1)
+    # plot the image and superimpose the segmentation on the left, the segmentation on its own in the center as
+    # a subplot and the binary mask on the right as a subplot:
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 15))
     ax1.imshow(image, vmin=0, vmax=1)
-    ax1.imshow(generated_segmentation, alpha=0.5, vmin=0, vmax=1, cmap='jet')
-    ax1.set_title('Generated segmentation')
-    ax2 = fig.add_subplot(1, 2, 2)
-    ax2.imshow(binary_mask, vmin=0, vmax=1, cmap='gray')
-    # center the title:
-    fig.suptitle(title, fontsize=16, y=0.95)
+    ax1.imshow(generated_segmentation, alpha=0.4, vmin=0, vmax=1, cmap='jet')
     # remove the axis:
+    ax1.axis('off')
+    ax1.set_title('Superimposed segmentation')
+    ax2.imshow(generated_segmentation, vmin=0, vmax=1, cmap='gray')
+    # remove the axis:
+    ax2.axis('off')
+    ax2.set_title(f'Generated segmentation')
+    ax3.imshow(binary_mask, vmin=0, vmax=1, cmap='gray')
+    # remove the axis:
+    ax3.axis('off')
+    ax3.set_title(f'Original binary mask')
+
+    # set the title of the plot:
+    fig.suptitle(title, fontsize=22, y=0.95)
     plt.axis('off')
-    # save the plot:
+
+    # save the plot if required:
     if save:
-        plt.imsave(path, image)
+        plt.savefig(path)
 
     # show the plot:
     plt.show()
@@ -135,8 +145,8 @@ def main():
     # ensure the results directory exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
-    results = pd.DataFrame({'model':  ['dense'], 'auc': [auc_ff_nn]})
-    results.to_csv(Path(RESULTS_PATH, 'patch_segmentation_by_pixel_classification.csv'), index=False)
+    results = pd.DataFrame({'model': ['dense'], 'auc': [auc_ff_nn]})
+    results.to_csv(Path(RESULTS_PATH, 'segmentation_by_patch_classification_feed_forward.csv'), index=False)
 
     # get 3 random images from the test set:
     random_indexes = np.random.choice(range(len(x_test)), 3)
@@ -147,10 +157,10 @@ def main():
         binary_mask = y_test[i]
         generated_segmentation = y_pred[i]
         # visualize the image and the segmentation:
-        visualize_segmentation(image=image, generated_segmentation=generated_segmentation,
-                               binary_mask=binary_mask, title=f'Test image {i} segmentation by pixel classification',
-                               save=True, path=Path(SAMPLE_IMAGE_RESULTS_PATH,
-                                                    f'test_image_{i}_segmentation_by_pixel_classification.png'))
+        visualize_segmentation(image=image, generated_segmentation=generated_segmentation, binary_mask=binary_mask,
+                               title=f'Test image {i} segmentation by patch classification', save=True,
+                               path=Path(SAMPLE_IMAGE_RESULTS_PATH,
+                                         f'test_image_{i}_segmentation_by_patch_classification_feed_forward.png'))
 
 
 # Driver Code:
