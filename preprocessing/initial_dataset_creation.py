@@ -13,7 +13,7 @@ import numpy as np
 from config import INITIAL_DATASET_PATH, TRAINING_CITY, TESTING_CITY
 
 
-def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool = True) -> None:
+def create_initial_dataset_folder_with_images_and_masks(city: str, split_type: str = 'train') -> None:
     """
     Creates the initial dataset folder with the images from the given city
     @param city: the city to use, must be present in the dataset, we selected Aachen and Zurich for
@@ -21,13 +21,18 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
     @param train: whether we are creating the training dataset or the testing dataset.
     :return: None. Populates the initial dataset folder with the images and masks from the given city
     """
-    # Raise exception if the trainin path does not exist
+    # Raise exception if the training path does not exist
     if not Path(INITIAL_DATASET_PATH).exists():
         raise FileNotFoundError(f"The initial dataset path {INITIAL_DATASET_PATH} does not exist."
                                 f"Please create it and try again.")
 
     # Select training or testing dataset folder:
-    im_path = Path(INITIAL_DATASET_PATH, "train") if train else Path(INITIAL_DATASET_PATH, "test")
+    if split_type == 'train':
+        im_path = Path(INITIAL_DATASET_PATH, "train")
+    elif split_type == 'validation':
+        im_path = Path(INITIAL_DATASET_PATH, "val")
+    else:
+        im_path = Path(INITIAL_DATASET_PATH, "test")
     im_path.mkdir(exist_ok=True, parents=True)
 
     # if the images are already in the folder, we don't need to copy them

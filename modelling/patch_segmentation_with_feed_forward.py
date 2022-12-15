@@ -134,7 +134,7 @@ def main():
 
     # train the model:
     model.fit(x_train, y_train, epochs=10, batch_size=32,
-              validation_data=(x_val.astype(float)/255, y_val))
+              validation_data=(x_val.astype(np.float32)/255, y_val))
 
     # evaluate the model on the AUC metric:
     y_pred = model.predict(x_test)
