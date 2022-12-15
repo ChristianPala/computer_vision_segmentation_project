@@ -18,7 +18,7 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, split_type: s
     Creates the initial dataset folder with the images from the given city
     @param city: the city to use, must be present in the dataset, we selected Aachen and Zurich for
     our training and testing datasets respectively.
-    @param train: whether we are creating the training dataset or the testing dataset.
+    @param split_type: the type of split to be loaded. either train, or val, or test.
     :return: None. Populates the initial dataset folder with the images and masks from the given city
     """
     # Raise exception if the training path does not exist
