@@ -7,13 +7,9 @@ import numpy as np
 import os
 
 # Modelling:
-from keras import Input, Model
-from keras.losses import BinaryCrossentropy
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SeparableConv2D, \
-    UpSampling2D, Concatenate
-from keras.optimizers import Adam
-
+from keras import Input
+from keras import Model
+from keras.layers import Conv2D, BatchNormalization, SeparableConv2D, MaxPooling2D, UpSampling2D, Concatenate
 
 # Typings
 from typing import Union
@@ -25,25 +21,44 @@ from sklearn.metrics import roc_curve, roc_auc_score
 # Utility functions
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
-
 # Global variables:
 from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
+
 PATCH_SIZE = 512
 
 
 def create_model():
-    input_layer = Input(shape=(None, None, 3))
-    x = Conv2D(filters=2, kernel_size=(3, 3), padding='same', activation='relu')(input_layer)
-    x = Conv2D(filters=4, kernel_size=(3, 3), padding='same', activation='relu')(x)
-    x = Conv2D(filters=8, kernel_size=(3, 3), padding='same', activation='relu')(x)
-    x = Conv2D(filters=128, kernel_size=(1, 1), padding='same', activation='relu')(x)
-    x = Conv2D(filters=1, kernel_size=(1, 1), padding='same', activation='sigmoid')(x)
+    input_layer = Input(shape=(None, None, 3), name='input')
+    x = Conv2D(filters=4, kernel_size=(3,3), padding='same', activation='relu')(input_layer)
+    x = BatchNormalization()(x)
+    x = SeparableConv2D(filters=8, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x1 = x
+    x = MaxPooling2D(2)(x)
+    x = SeparableConv2D(filters=16, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x2 = x
+    x = MaxPooling2D(2)(x)
+    x = SeparableConv2D(filters=32, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = SeparableConv2D(filters=32, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = UpSampling2D(2)(x)
+    x = Concatenate()([x,x2]) # Skip connections
+    x = SeparableConv2D(filters=32, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = UpSampling2D(2)(x)
+    x = Concatenate()([x,x1]) # Skip connections
+    x = SeparableConv2D(filters=32, kernel_size=(3,3), padding='same', activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Conv2D(filters=128, kernel_size=(1,1), padding='same', activation='relu')(x)
+    x = Conv2D(filters=1, kernel_size=(1,1), padding='same', activation='sigmoid')(x)
     return Model(input_layer, x)
 
 
 def main():
     """
-    Main function to segment an image by classifying by patches with a convoluted neural network.
+    Main function to segment an image by classifying by patches with a UNet convoluted neural network.
     :return: None, saves the AUC score in the results' folder.
     """
 
@@ -83,7 +98,3 @@ def main():
 
     # print the AUC:
     print(roc_auc_score(y_test, y_pred))
-
-
-if __name__ == '__main__':
-    main()

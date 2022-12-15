@@ -7,11 +7,15 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 INITIAL_DATASET_PATH = os.path.join(ROOT_PATH, 'initial_dataset')
 # get the path of the training dataset
 TRAINING_DATASET_PATH = os.path.join(INITIAL_DATASET_PATH, 'train')
+# get the path of the validation dataset
+VALIDATION_DATASET_PATH = os.path.join(INITIAL_DATASET_PATH, 'val')
 # get the path of the testing dataset
 TESTING_DATASET_PATH = os.path.join(INITIAL_DATASET_PATH, 'test')
 # Training city:
 # We will use the city of Aachen for our training dataset
 TRAINING_CITY = "aachen"
+# We will use the city of Frankfurt for our validation dataset
+VALIDATION_CITY = "frankfurt"
 # We will use the city of Zürich for our testing dataset
 TESTING_CITY = "zurich"
 # Results folder:

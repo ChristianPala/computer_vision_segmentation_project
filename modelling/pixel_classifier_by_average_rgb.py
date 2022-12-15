@@ -10,20 +10,27 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 
 # Global Variables:
-from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, RESULTS_PATH
+from config import TRAINING_DATASET_PATH, VALIDATION_DATASET_PATH, TESTING_DATASET_PATH, RESULTS_PATH
 
 
 # Functions:
-def load_dataset(classification_type: str = 'by_pixel', train: bool = True) -> pd.DataFrame:
+def load_dataset(classification_type: str = 'by_pixel', split_type: str = 'train') -> pd.DataFrame:
     """
     Loads the dataset from the path
-    @param train: True if the image is from the training dataset, False if it is from the testing dataset
+    @param split_type: the type of split to be loaded. either train, or val, or test
     @param classification_type: the type of classification from which to load the dataset
     :return: the dataset
     """
-    path: Path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
-    name: str = 'train' if train else 'test'
+    # Determine the path of the dataset
+    name: str = split_type.lower()
+    if name == 'train':
+        path: Path = TRAINING_DATASET_PATH
+    elif name == 'val':
+        path: Path = VALIDATION_DATASET_PATH
+    else:
+        path: Path = TESTING_DATASET_PATH
 
+    # Determine the type of classification, either by pixel or by patch
     if classification_type == 'by_pixel':
         df = pd.read_csv(Path(path, f'{name}_by_pixel.csv'))
     elif classification_type == 'by_patch':
