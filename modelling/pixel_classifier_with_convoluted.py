@@ -39,29 +39,25 @@ def mkmodel():
     return Model(input_layer, x)
 
 
-def main():
-    """
-    Main function to segment an image by classifying each pixel with a feed forward neural network.
-    :return: None, saves the AUC score in the results' folder.
-    """
+def main() -> None:
 
-    train = load_dataset(classification_type='by_patch', train=True)
-    test = load_dataset(classification_type='by_patch', train=False)
+    training: pd.DataFrame = load_dataset(classification_type='by_patch', train=True)
+    testing: pd.DataFrame = load_dataset(classification_type='by_patch', train=False)
 
-    # Preprocess the data:
-    # get the raw features and labels:
-    x_train = train['patch']
-    y_train = train['mask_label']
-    x_test = test['patch']
-    y_test = test['mask_label']
+    # split the data into X and y:
+    x_train = training[['r', 'g', 'b']]
 
-    # preprocess the data, convert to float32 and normalize to [0, 1]:
-    x_train = np.array(x_train.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
-    x_test = np.array(x_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
-    y_train = np.array(y_train.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
-    y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
+    # For now, the only feature is the average RGB value:
+    x_train = np.array(x_train.mean(axis=1)).reshape(-1, 1)
+    y_train = training['class']
 
-    model = create_model()
+    x_test = testing[['r', 'g', 'b']]
+    x_test = np.array(x_test.mean(axis=1)).reshape(-1, 1)
+    y_test = testing['class']
+
+    df_train = pd.DataFrame(x_train, y_train)
+
+    model = mkmodel()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
     model.fit(x_train, y_train, epochs=10, batch_size=32)
@@ -85,9 +81,10 @@ if __name__ == '__main__':
 
 
 
-def create_convolutional_model() -> Model:
-    """
-    Create a convolutional neural network with 2 hidden layers and a sigmoid output layer.
-    :return: Sequential: the model.
-    """
-    pass
+
+
+
+
+
+
+
