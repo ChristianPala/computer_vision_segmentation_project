@@ -1,6 +1,7 @@
 # Library to classify a single pixel with a convoluted neural network
 # Libraries:
 # Data manipulation:
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -19,6 +20,9 @@ from modelling.pixel_classifier_by_average_rgb import load_dataset
 # Global variables:
 from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH
 PATCH_SIZE = 512
+
+log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
+log_path.mkdir(parents=True, exist_ok=True)
 
 
 def create_model():
@@ -61,8 +65,8 @@ def main():
     model = create_model()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=10, batch_size=32, validation_data=(x_validation, y_validation),
-              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOGS_PATH)])
+    model.fit(x_train, y_train, epochs=7, batch_size=32, validation_data=(x_validation, y_validation),
+              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=log_path, histogram_freq=1)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
@@ -72,21 +76,21 @@ def main():
     y_pred_flat = y_pred.ravel()
     y_test_flat = y_test.ravel()
     # calculate the AUC:
-    auc_ff_nn = roc_auc_score(y_test_flat, y_pred_flat)
+    auc_cnn_standard = roc_auc_score(y_test_flat, y_pred_flat)
 
-    print(f'The AUC on the test set is: {auc_ff_nn}')
+    print(f'The AUC on the test set is: {auc_cnn_standard}')
 
     # Save the results:
     results_path = Path(RESULTS_PATH)
     results_path.mkdir(parents=True, exist_ok=True)
-    results = pd.DataFrame({'auc': [auc_ff_nn]})
+    results = pd.DataFrame({'auc': [auc_cnn_standard]})
     results_path /= 'auc_ff_nn.csv'
     results.to_csv(results_path, index=False)
 
 
 if __name__ == '__main__':
     tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', TENSORBOARD_LOGS_PATH])
+    tb.configure(argv=[None, '--logdir', log_path])
     url = tb.launch()
     print(f"Tensorflow listening on {url}")
     main()

@@ -1,33 +1,35 @@
 # Library to classify a single pixel with a convoluted neural network
 # Libraries:
 # Data manipulation:
+from datetime import datetime
 from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import os
 
 # Modelling:
 from keras import Input, Model
-from keras.losses import BinaryCrossentropy
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SeparableConv2D, \
-    UpSampling2D, Concatenate
-from keras.optimizers import Adam
-
+from keras.layers import Conv2D
 
 # Typings
 from typing import Union
 
 # Plots
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import roc_auc_score
 
 # Utility functions
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 
 # Global variables:
-from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
+from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH
+from tensorboard import program
+
+log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
+log_path.mkdir(parents=True, exist_ok=True)
+
 
 def create_model():
     input_layer = Input(shape=(None, None, 3))
@@ -62,7 +64,8 @@ def main() -> None:
     model = create_model()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=15, batch_size=32, validation_data=(x_val, y_val), callbacks=[])
+    model.fit(x_train, y_train, epochs=15, batch_size=32, validation_data=(x_val, y_val),
+              callbacks=[tf.keras.callbacks.TensorBoard(log_path, histogram_freq=1)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
@@ -81,6 +84,10 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    tb = program.TensorBoard()
+    tb.configure(argv=[None, '--logdir', log_path])
+    url = tb.launch()
+    print(f"Tensorflow listening on {url}")
     main()
 
 

@@ -1,6 +1,7 @@
 # File to segment an image by classifying each pixel with a feed forward neural network
 # Libraries:
 # Data manipulation:
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -25,6 +26,8 @@ from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PAT
 PATCH_SIZE = 512  # the size of the patches extracted from the images:
 # Ensure the directory exists:
 Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
+log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
+log_path.mkdir(parents=True, exist_ok=True)
 # Tensorflow logging level:
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -136,7 +139,7 @@ def main():
 
     # train the model:
     model.fit(x_train, y_train, epochs=10, batch_size=32,
-              validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOGS_PATH)])
+              validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(log_dir=log_path)])
 
     # evaluate the model on the AUC metric:
     y_pred = model.predict(x_test)
@@ -174,7 +177,7 @@ def main():
 # Driver Code:
 if __name__ == '__main__':
     tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', TENSORBOARD_LOGS_PATH])
+    tb.configure(argv=[None, '--logdir', log_path])
     url = tb.launch()
     print(f"Tensorflow listening on {url}")
     main()
