@@ -16,11 +16,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score
 # Utility functions
 from modelling.pixel_classifier_by_average_rgb import load_dataset
-
+# Tensorboard:
+import tensorflow as tf
+from tensorboard import program
 # Global variables:
-from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
-PATCH_SIZE = 512  # the size of the patches extracted from the images:
+from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH
 
+PATCH_SIZE = 512  # the size of the patches extracted from the images:
 # Ensure the directory exists:
 Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
 # Tensorflow logging level:
@@ -109,32 +111,32 @@ def main():
     """
 
     train = load_dataset(classification_type='by_patch', split_type='train')
-    test = load_dataset(classification_type='by_patch', split_type='test')
     val = load_dataset(classification_type='by_patch', split_type='val')
+    test = load_dataset(classification_type='by_patch', split_type='test')
 
     # Preprocess the data:
     # get the raw features and labels:
     x_train = train['patch']
     y_train = train['mask_label']
-    x_test = test['patch']
-    y_test = test['mask_label']
     x_val = val['patch']
     y_val = val['mask_label']
+    x_test = test['patch']
+    y_test = test['mask_label']
 
     # preprocess the data, convert to float32 and normalize to [0, 1]:
     x_train = np.array(x_train.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
-    x_test = np.array(x_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
     x_val = np.array(x_val.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
+    x_test = np.array(x_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 3)).astype(np.float32) / 255
     y_train = np.array(y_train.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
-    y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
     y_val = np.array(y_val.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
+    y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
 
     # create the model:
     model = create_model()
 
     # train the model:
     model.fit(x_train, y_train, epochs=10, batch_size=32,
-              validation_data=(x_val.astype(float)/255, y_val))
+              validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOGS_PATH)])
 
     # evaluate the model on the AUC metric:
     y_pred = model.predict(x_test)
@@ -171,4 +173,8 @@ def main():
 
 # Driver Code:
 if __name__ == '__main__':
+    tb = program.TensorBoard()
+    tb.configure(argv=[None, '--logdir', TENSORBOARD_LOGS_PATH])
+    url = tb.launch()
+    print(f"Tensorflow listening on {url}")
     main()

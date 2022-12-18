@@ -10,7 +10,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 
 # Global Variables:
-from config import TRAINING_DATASET_PATH, VALIDATION_DATASET_PATH, TESTING_DATASET_PATH, RESULTS_PATH
+from config import TRAINING_DATASET_PATH, VALIDATION_DATASET_PATH, \
+    TESTING_DATASET_PATH, RESULTS_PATH
 
 
 # Functions:
@@ -27,8 +28,10 @@ def load_dataset(classification_type: str = 'by_pixel', split_type: str = 'train
         path: Path = TRAINING_DATASET_PATH
     elif name == 'val':
         path: Path = VALIDATION_DATASET_PATH
-    else:
+    elif name == 'test':
         path: Path = TESTING_DATASET_PATH
+    else:
+        raise ValueError(f'Unknown split type: {split_type}')
 
     # Determine the type of classification, either by pixel or by patch
     if classification_type == 'by_pixel':
@@ -68,7 +71,7 @@ def train_model(model: LogisticRegression or KNeighborsClassifier, train: bool =
     @param train: True if the image is from the training dataset, False if it is from the testing dataset
     :return: the trained model
     """
-    df = load_dataset(train)
+    df = load_dataset(classification_type='by_pixel', split_type='train')
     rgb = df[['r', 'g', 'b']]
     y = df['class']
     # for the initial classifier we only care about the average RGB value of each pixel:
@@ -83,7 +86,7 @@ def evaluate_model(model: LogisticRegression or KNeighborsClassifier) -> float:
     @param model: the model to evaluate
     :return: the AUC score of the model
     """
-    df = load_dataset(train=False)
+    df = load_dataset(classification_type='by_pixel', split_type='test')
     rgb = df[['r', 'g', 'b']]
     x = np.array(rgb.mean(axis=1)).reshape(-1, 1)
     y = df['class']
@@ -110,7 +113,7 @@ def main():
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
     # save the results:
     results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
-                            'auc': [auc_log, auc_knn]})
+                            'val_auc': [auc_log, auc_knn]})
     results.to_csv(Path(RESULTS_PATH, 'pixel_classifier_by_average_rgb.csv'), index=False)
 
 

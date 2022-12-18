@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 # Global variables:
-from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, VALIDATION_DATASET_PATH
 
 
 def get_images_and_binary_masks(train: bool = True) -> (list, list):
@@ -40,6 +40,90 @@ def get_images_and_binary_masks(train: bool = True) -> (list, list):
     binary_masks = [skimage.color.rgb2gray(mask) for mask in binary_masks]
 
     return images, binary_masks
+
+
+def get_val_images_and_binary_masks() -> (list, list):
+    """
+    Auxiliary function to get the images and the binary masks from the validation dataset.
+    :return:
+    """
+    # get the correct path:
+    path = VALIDATION_DATASET_PATH
+
+    # get all the images:
+    images = []
+    for image_path in glob(os.path.join(path, 'image_*.png')):
+        images.append(skimage.io.imread(image_path))
+
+    # get all the grayscale binary masks in the path:
+    binary_masks = []
+    for mask_path in glob(os.path.join(path, 'binary_mask_*.png')):
+        binary_masks.append(skimage.io.imread(mask_path))
+
+    binary_masks = [skimage.color.rgb2gray(mask) for mask in binary_masks]
+
+    return images, binary_masks
+
+
+def compute_validation_proportions() -> (int, int):
+    """
+    Computes the total number of pixels in the sky class in the validation dataset
+    :return: the total number of pixels in the sky class
+    """
+    # get the binary masks:
+    binary_masks = get_val_images_and_binary_masks()[1]
+
+    # compute the total number of pixels in the sky class
+    total_sky_pixels = 0
+    total_non_sky_pixels = 0
+    for mask in binary_masks:
+        total_sky_pixels += np.sum(mask == 1)
+        total_non_sky_pixels += np.sum(mask != 1)
+
+    # compute the sampling proportions to sample for each images
+    return total_sky_pixels, total_non_sky_pixels
+
+
+def validation_pixel_sampler(total_count: int) -> pd.DataFrame:
+    """
+    Sample pixels from the validation dataset.
+    @param total_count: the total number of pixels to sample.
+    :return: None. Saves the sampled pixels in a csv file.
+    """
+    # get the images and the binary masks:
+    images, binary_masks = get_val_images_and_binary_masks()
+
+    # compute the sampling proportions:
+    total_sky_pixels, total_non_sky_pixels = compute_validation_proportions()
+
+    sky_sample = total_count / total_sky_pixels
+    non_sky_sample = total_count / total_non_sky_pixels
+
+    # create the dataset
+    df = pd.DataFrame(columns=['image_nr', 'r', 'g', 'b', 'x', 'y', 'class'])
+
+    # sample the pixels
+    image_count = 0
+    for image, mask in zip(images, binary_masks):
+        sky_row, sky_column, sky_r, sky_g, sky_b, non_sky_row, non_sky_column, non_sky_r, non_sky_g, non_sky_b = \
+            binary_sampler(image, mask, sky_sample, non_sky_sample)
+
+        # create the sky dataframe
+        sky_df = pd.DataFrame(
+            {'image_nr': image_count, 'r': sky_r, 'g': sky_g, 'b': sky_b, 'x': sky_column, 'y': sky_row, 'class': 1})
+
+        # create the non-sky dataframe
+        non_sky_df = pd.DataFrame(
+            {'image_nr': image_count, 'r': non_sky_r, 'g': non_sky_g, 'b': non_sky_b, 'x': non_sky_column,
+             'y': non_sky_row, 'class': 0})
+
+        # concatenate the dataframes
+        df = pd.concat([df, sky_df, non_sky_df], ignore_index=True)
+
+        # increment the image count
+        image_count += 1
+
+    return df
 
 
 def compute_sampling_proportions(train: bool = True) -> (int, int):
@@ -323,6 +407,27 @@ def patch_sampler(train: bool = True) -> pd.DataFrame:
     return df
 
 
+def val_patch_sampler() -> pd.DataFrame:
+    # get all the images in the path:
+    images, binary_masks = get_val_images_and_binary_masks()
+
+    df = pd.DataFrame(columns=['image_nr', 'patch', 'center_x', 'center_y', 'class', 'mask_label'])
+    img_num: int = 0
+    for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
+        if not has_sky_delta(mask):  # Skip images with no sky
+            continue
+
+        patches, mask_labels, classes, centers_row, centers_column = get_patches(img, mask)
+
+        temp_df = pd.DataFrame({'image_nr': img_num, 'patch': patches, 'mask_label': mask_labels,
+                                'center_x': centers_column, 'center_y': centers_row, 'class': classes})
+        df = pd.concat([df, temp_df], ignore_index=True)
+
+        img_num += 1
+
+    return df
+
+
 def main() -> None:
     """
     Main function to sample pixels from the training dataset, and save them to a csv file.
@@ -330,36 +435,43 @@ def main() -> None:
     Gives some information on the generated dataset.
     :return: None. Saves the sampled datasets to csv files and displays some information about them.
     """
-    # sample amount of pixels from the training and testing dataset for the pixel classifier:
-    # training_pixels: int = 15000
-    # testing_pixels: int = 5000
-    #
-    # # sample 10000 pixels from the training dataset:
-    # train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
-    # # sample 10000 pixels from the testing dataset:
-    # test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
-    #
-    # # save the sampled pixels:
-    # train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
-    # test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
-    #
-    # # inspect the sampled pixels:
-    # sampler_visual_inspector(training=True)
-    #
-    # # explore the pixel datasets:
-    # dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
-    # dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
+    # sample amount of pixels per class from the training and testing dataset for the pixel classifier:
+    training_pixels: int = 15000
+    testing_pixels: int = 5000
+
+    # sample 15000 pixels from the training dataset:
+    train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
+    # sample 5000 pixels from the validation dataset:
+    val_pixels_df: pd.DataFrame = validation_pixel_sampler(total_count=testing_pixels)
+    # sample 5000 pixels from the testing dataset:
+    test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
+
+    # save the sampled pixels:
+    train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
+    val_pixels_df.to_csv(Path(VALIDATION_DATASET_PATH, 'val_by_pixel.csv'), index=False)
+    test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
+
+    # inspect the sampled pixels:
+    sampler_visual_inspector(training=True)
+
+    # explore the pixel datasets:
+    dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
+    dataset_explorer(dataframe=val_pixels_df, sampling_type="pixel", train=False)
+    dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
 
     # Sample patches from the training and testing dataset for the patch classifier:
     train_patches_df = patch_sampler(train=True)
+    val_patches_df = val_patch_sampler()
     test_patches_df = patch_sampler(train=False)
 
     # save the sampled patches as pickle files to preserve the image data:
     train_patches_df.to_pickle(Path(TRAINING_DATASET_PATH, 'train_by_patch.pkl'))
+    val_patches_df.to_pickle(Path(VALIDATION_DATASET_PATH, 'val_by_patch.pkl'))
     test_patches_df.to_pickle(Path(TESTING_DATASET_PATH, 'test_by_patch.pkl'))
 
     # explore the patch datasets:
     dataset_explorer(dataframe=train_patches_df, sampling_type="patch", train=True)
+    dataset_explorer(dataframe=val_patches_df, sampling_type="patch", train=False)
     dataset_explorer(dataframe=test_patches_df, sampling_type="patch", train=False)
 
 

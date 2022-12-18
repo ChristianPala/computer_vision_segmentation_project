@@ -10,7 +10,7 @@ import glob
 
 
 # Global variables:
-from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, VALIDATION_DATASET_PATH
 
 
 def count_number_of_files(path: Union[Path, str]) -> int:
@@ -22,7 +22,8 @@ def count_number_of_files(path: Union[Path, str]) -> int:
     return len(glob.glob(os.path.join(path, '*image_*.png')))
 
 
-def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) -> (np.ndarray, np.ndarray):
+def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) \
+        -> (np.ndarray, np.ndarray):
     """
     Gets the image corresponding to the given number and its full segmentation.
     @param: img_number: Index of the image desired to be plotted
@@ -41,6 +42,38 @@ def get_image_and_segmentation(img_number: Union[str, int], train: bool = True) 
     im = skimage.io.imread(im_path)
     segmentation = skimage.io.imread(segmentation_path)
     return im, segmentation
+
+
+def get_image_and_segmentation_for_validation(img_number: Union[str, int]) \
+        -> (np.ndarray, np.ndarray):
+    """
+    Gets the image corresponding to the given number and its full segmentation.
+    @param img_number: the index of the image desired to be plotted
+    @return: image and segmentation as numpy ndarrays.
+    """
+    # Check that the given image number is a string
+    img_number = str(img_number)
+
+    im_path = str(Path(VALIDATION_DATASET_PATH, 'image_' + img_number + '.png'))
+    segmentation_path = str(Path(VALIDATION_DATASET_PATH, 'mask_' + img_number + '.png'))
+    im = skimage.io.imread(im_path)
+    segmentation = skimage.io.imread(segmentation_path)
+
+    return im, segmentation
+
+def get_binary_mask(img_number: Union[str, int], train: bool = True) -> np.ndarray:
+    """
+    Gets the binary mask corresponding to the given number
+    @param img_number: the index of the image desired to be plotted
+    @param train: True if the image is from the training dataset, False if it is from the testing dataset
+    :return: the binary mask as a numpy ndarray
+    """
+    # The binary mask is in the same folder as the image and segmentation named as binary_mask_sky_{img_number}.png
+    path = TRAINING_DATASET_PATH if train else TESTING_DATASET_PATH
+    binary_mask_path = str(Path(path, 'binary_mask_sky_' + str(img_number) + '.png'))
+    binary_mask = skimage.io.imread(binary_mask_path)
+    return binary_mask
+
 
 
 def visualize_image_and_segmentation(img_number: Union[str, int] = 1, train: bool = True,
@@ -66,7 +99,6 @@ def visualize_image_and_segmentation(img_number: Union[str, int] = 1, train: boo
     ax1.yaxis.set_visible(False)
     ax1.imshow(segmentation, vmin=0, vmax=255)
     fig.show()
-
 
 def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
     """
@@ -102,11 +134,12 @@ def binary_mask(mask) -> np.ndarray:
     return mask
 
 
-def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
+def save_binary_mask_images(label: str = 'sky', train: bool = True, val: bool = True) -> None:
     """
     Saves the binary mask images
     @param: label: The label of the element that is wanted to be selected.
     @param: train: Flag to define whether the binary masks are for training or testing.
+    @param: val: Flag to define whether we have a validation set or not.
     :return: None. It directly saves the images in the desired path.
     """
     if train:
@@ -114,12 +147,72 @@ def save_binary_mask_images(label: str = 'sky', train: bool = True) -> None:
         imgs_path = Path(TRAINING_DATASET_PATH, f'binary_mask_{label}_')
         [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation(i, train=True)[1]))
          for i in range(n_images)]
+        if val:
+            n_images = count_number_of_files(VALIDATION_DATASET_PATH)
+            imgs_path = Path(VALIDATION_DATASET_PATH, f'binary_mask_{label}_')
+            [skimage.io.imsave(fname=f'{imgs_path}{i}.png', arr=binary_mask(get_image_and_segmentation_for_validation(i)[1]))
+             for i in range(n_images)]
+
     else:
         n_images = count_number_of_files(TESTING_DATASET_PATH)
         imgs_path = Path(TESTING_DATASET_PATH, f'binary_mask_{label}_')
         [skimage.io.imsave(fname=f'{imgs_path}{i}.png',
                            arr=binary_mask(get_image_and_segmentation(i, train=False)[1]))
          for i in range(n_images)]
+
+
+def sample_random_images() -> None:
+    """
+    Samples 3 random images from the training, validation and testing sets
+    together with their segmentation and binary masks to visually check that
+    the data is correct.
+    @return: None. It directly plots the images.
+    """
+    # Sample 3 random images from the training set
+    train_imgs = np.random.randint(0, count_number_of_files(TRAINING_DATASET_PATH), 3)
+    for i in train_imgs:
+        image = get_image_and_segmentation(i, train=True)[0]
+        segmentation = get_image_and_segmentation(i, train=True)[1]
+        binary_mask = get_binary_mask(i, train=True)
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3)
+        ax0.set_title('Original image')
+        ax0.xaxis.set_visible(False)
+        ax0.yaxis.set_visible(False)
+        ax0.imshow(image, vmin=0, vmax=255)
+
+        ax1.set_title('Image Segmentation')
+        ax1.xaxis.set_visible(False)
+        ax1.yaxis.set_visible(False)
+        ax1.imshow(segmentation, vmin=0, vmax=255)
+
+        ax2.set_title('Binary Mask')
+        ax2.xaxis.set_visible(False)
+        ax2.yaxis.set_visible(False)
+        ax2.imshow(binary_mask, vmin=0, vmax=255)
+        fig.show()
+
+    # Sample 3 random images from the testing set
+    test_imgs = np.random.randint(0, count_number_of_files(TESTING_DATASET_PATH), 3)
+    for i in test_imgs:
+        image = get_image_and_segmentation(i, train=False)[0]
+        segmentation = get_image_and_segmentation(i, train=False)[1]
+        binary_mask = get_binary_mask(i, train=False)
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=1, ncols=3)
+        ax0.set_title('Original image')
+        ax0.xaxis.set_visible(False)
+        ax0.yaxis.set_visible(False)
+        ax0.imshow(image, vmin=0, vmax=255)
+
+        ax1.set_title('Image Segmentation')
+        ax1.xaxis.set_visible(False)
+        ax1.yaxis.set_visible(False)
+        ax1.imshow(segmentation, vmin=0, vmax=255)
+
+        ax2.set_title('Binary Mask')
+        ax2.xaxis.set_visible(False)
+        ax2.yaxis.set_visible(False)
+        ax2.imshow(binary_mask, vmin=0, vmax=255)
+        fig.show()
 
 
 def main():
@@ -129,8 +222,11 @@ def main():
     # Save the binary masks
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UserWarning)
-        save_binary_mask_images(label='sky', train=True)
+        save_binary_mask_images(label='sky', train=True, val=True)
         save_binary_mask_images(label='sky', train=False)
+
+    # Sample 3 random images from the training and testing sets to check that the data is correct:
+    sample_random_images()
 
 
 if __name__ == '__main__':

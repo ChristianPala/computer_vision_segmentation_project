@@ -6,24 +6,19 @@ import pandas as pd
 import numpy as np
 import os
 # Modelling:
+import tensorflow as tf
 from keras import Input, Model
-from keras.losses import BinaryCrossentropy
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, BatchNormalization, SeparableConv2D, \
-    UpSampling2D, Concatenate
-from keras.optimizers import Adam
+from keras.layers import Conv2D
+# Tensorboard:
+from tensorboard import program
 # Plots
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.metrics import roc_auc_score
 # Utility functions
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
-from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH
+from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH
 PATCH_SIZE = 512
-# Tensorflow logging:
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 
 
 def create_model():
@@ -43,7 +38,7 @@ def main():
     """
 
     train = load_dataset(classification_type='by_patch', split_type='train')
-    validation = load_dataset(classification_type='by_patch', split_type='validation')
+    validation = load_dataset(classification_type='by_patch', split_type='val')
     test = load_dataset(classification_type='by_patch', split_type='test')
 
     # Preprocess the data:
@@ -64,10 +59,10 @@ def main():
     y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
 
     model = create_model()
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'],
-                  callabacks=[tensorboard_callback])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=10, batch_size=32)
+    model.fit(x_train, y_train, epochs=10, batch_size=32, validation_data=(x_validation, y_validation),
+              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOGS_PATH)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
@@ -81,11 +76,17 @@ def main():
 
     print(f'The AUC on the test set is: {auc_ff_nn}')
 
+    # Save the results:
+    results_path = Path(RESULTS_PATH)
+    results_path.mkdir(parents=True, exist_ok=True)
+    results = pd.DataFrame({'auc': [auc_ff_nn]})
+    results_path /= 'auc_ff_nn.csv'
+    results.to_csv(results_path, index=False)
+
 
 if __name__ == '__main__':
+    tb = program.TensorBoard()
+    tb.configure(argv=[None, '--logdir', TENSORBOARD_LOGS_PATH])
+    url = tb.launch()
+    print(f"Tensorflow listening on {url}")
     main()
-
-
-
-
-

@@ -7,12 +7,16 @@ import pandas as pd
 # Modelling:
 from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset, create_model
+from tensorboard import program
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten
 import tensorflow as tf
 
 # Global variables:
-from config import RESULTS_PATH
+from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH
+
+Path(TENSORBOARD_LOGS_PATH).mkdir(parents=True, exist_ok=True)
+Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
 
 
 # Functions:
@@ -54,7 +58,7 @@ def create_feed_forward_model(x_shape: int, y_shape: int, channels: int) -> Sequ
     # second dense layer:
     model.add(Dense(dense_layer_size_2, activation='relu'))
     # add a dropout layer to prevent over-fitting:
-    model.add(Dropout(dense_layer_size_2))
+    model.add(Dropout(dropout_rate))
     # the output layer has 1 neuron since it's a binary classification:
     model.add(Dense(1, activation='sigmoid'))
     # compile the model:
@@ -69,17 +73,21 @@ def main() -> None:
     :return: None. Prints the AUC score of the model
     """
     # Load the dataset:
-    train = load_dataset(classification_type="by_patch", train=True)
-    test = load_dataset(classification_type="by_patch", train=False)
+    train = load_dataset(classification_type="by_patch", split_type='train')
+    val = load_dataset(classification_type="by_patch", split_type='val')
+    test = load_dataset(classification_type="by_patch", split_type='test')
 
     # get the raw features and labels:
     x_train = train['patch']
     y_train = train['class']
+    x_val = val['patch']
+    y_val = val['class']
     x_test = test['patch']
     y_test = test['class']
 
     # preprocess the data:
     x_train, y_train = preprocess_data(x_train, y_train)
+    x_val, y_val = preprocess_data(x_val, y_val)
     x_test, y_test = preprocess_data(x_test, y_test)
 
     # get the shape of a single image for the network input:
@@ -89,7 +97,8 @@ def main() -> None:
     model = create_feed_forward_model(x_shape, y_shape, channels)
 
     # train the model:
-    model.fit(x_train, y_train, epochs=10)
+    model.fit(x_train, y_train, epochs=15, validation_data=(x_val, y_val),
+              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOGS_PATH)])
 
     # predict the test data:
     y_pred = model.predict(x_test)
@@ -111,4 +120,8 @@ def main() -> None:
 
 # Driver code:
 if __name__ == '__main__':
+    tb = program.TensorBoard()
+    tb.configure(argv=[None, '--logdir', TENSORBOARD_LOGS_PATH])
+    url = tb.launch()
+    print(f"Tensorflow listening on {url}")
     main()
