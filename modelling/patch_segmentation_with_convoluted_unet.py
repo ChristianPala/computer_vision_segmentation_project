@@ -25,6 +25,7 @@ from modelling.pixel_classifier_by_average_rgb import load_dataset
 # Global variables:
 from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH
 from tensorboard import program
+import tensorflow as tf
 PATCH_SIZE = 512
 log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
 log_path.mkdir(parents=True, exist_ok=True)
@@ -90,7 +91,7 @@ def main():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
     model.fit(x_train, y_train, epochs=10, batch_size=32,
-              validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(log_path)])
+              validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(str(log_path))])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
@@ -114,7 +115,7 @@ def main():
 
 if __name__ == '__main__':
     tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', log_path])
+    tb.configure(argv=[None, '--logdir', str(log_path)])
     url = tb.launch()
     print(f"Tensorflow listening on {url}")
     main()

@@ -66,7 +66,7 @@ def main():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
     model.fit(x_train, y_train, epochs=7, batch_size=32, validation_data=(x_validation, y_validation),
-              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=log_path, histogram_freq=1)])
+              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=str(log_path), histogram_freq=1)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
@@ -90,7 +90,7 @@ def main():
 
 if __name__ == '__main__':
     tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', log_path])
+    tb.configure(argv=[None, '--logdir', str(log_path)])
     url = tb.launch()
     print(f"Tensorflow listening on {url}")
     main()
