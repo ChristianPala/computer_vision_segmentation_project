@@ -87,7 +87,7 @@ def main():
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
     model.fit(x_train, y_train, epochs=10, batch_size=32,
-              validation_data=(x_val, y_val))
+              validation_data=(x_val.astype(np.float32)/255, y_val))
 
     # Evaluate the model:
     y_pred = model.predict(x_test)

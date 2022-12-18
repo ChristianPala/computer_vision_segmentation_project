@@ -18,8 +18,8 @@ from config import TRAINING_DATASET_PATH, VALIDATION_DATASET_PATH, \
 def load_dataset(classification_type: str = 'by_pixel', split_type: str = 'train') -> pd.DataFrame:
     """
     Loads the dataset from the path
-    @param split_type: the type of split to be loaded. either train, or val, or test
-    @param classification_type: the type of classification from which to load the dataset
+    @param split_type: the type of split to be loaded. either train, or val, or test.
+    @param classification_type: the type of classification from which to load the dataset.
     :return: the dataset
     """
     # Determine the path of the dataset
