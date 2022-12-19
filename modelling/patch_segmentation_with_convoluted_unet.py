@@ -27,8 +27,8 @@ log_path.mkdir(parents=True, exist_ok=True)
 
 def create_model() -> Model:
     """
-    Creates a UNet model, copied from professor Giusti's jupyter notebook fcn.ipynb.
-    @return: Model, the UNet model.
+    Creates a U-Net model, copied from professor Giusti's jupyter notebook fcn.ipynb.
+    @return: Model, the U-Net model.
     """
     input_layer = Input(shape=(None, None, 3), name='input')
     x = Conv2D(filters=4, kernel_size=(3, 3), padding='same', activation='relu')(input_layer)
@@ -63,6 +63,8 @@ def main() -> None:
     Main function to segment an image by classifying by patches with a UNet convoluted neural network.
     :return: None, saves the AUC score in the results' folder.
     """
+
+    # Load training, validation and testing sets
     train = load_dataset(classification_type='by_patch', split_type='train')
     validation = load_dataset(classification_type='by_patch', split_type='val')
     test = load_dataset(classification_type='by_patch', split_type='test')
@@ -87,20 +89,20 @@ def main() -> None:
     model = create_model()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=3, batch_size=128,
+    model.fit(x_train, y_train, epochs=15, batch_size=128,
               validation_data=(x_validation, y_validation),
-              callbacks=[tf.keras.callbacks.TensorBoard(str(log_path))])
+              callbacks=[tf.keras.callbacks.TensorBoard(log_dir=str(log_path), histogram_freq=1)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test, batch_size=32)
     y_pred = np.where(y_pred > 0.5, 1, 0)
 
-    # flatten for the AUC metric:
+    # Flatten for the AUC metric:
     y_pred_flat = y_pred.ravel()
     y_test_flat = y_test.ravel()
-    # calculate the AUC:
-    auc_cnn_unet = roc_auc_score(y_test_flat, y_pred_flat)
 
+    # Calculate the AUC:
+    auc_cnn_unet = roc_auc_score(y_test_flat, y_pred_flat)
     print(f'The AUC on the test set is: {auc_cnn_unet}')
 
     # Save the results:

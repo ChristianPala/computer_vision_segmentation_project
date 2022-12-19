@@ -437,26 +437,26 @@ def main() -> None:
     Gives some information on the generated dataset.
     :return: None. Saves the sampled datasets to csv files and displays some information about them.
     """
-    # sample amount of pixels per class from the training and testing dataset for the pixel classifier:
+    # Sample amount of pixels per class from the training and testing dataset for the pixel classifier:
     training_pixels: int = 15000
     testing_pixels: int = 5000
 
-    # sample 15000 pixels from the training dataset:
+    # Sample 15000 pixels from the training dataset:
     train_pixels_df: pd.DataFrame = pixel_sampler(total_count=training_pixels, train=True)
-    # sample 5000 pixels from the validation dataset:
+    # Sample 5000 pixels from the validation dataset:
     val_pixels_df: pd.DataFrame = validation_pixel_sampler(total_count=testing_pixels)
-    # sample 5000 pixels from the testing dataset:
+    # Sample 5000 pixels from the testing dataset:
     test_pixels_df: pd.DataFrame = pixel_sampler(total_count=testing_pixels, train=False)
 
-    # save the sampled pixels:
+    # Save the sampled pixels:
     train_pixels_df.to_csv(Path(TRAINING_DATASET_PATH, 'train_by_pixel.csv'), index=False)
     val_pixels_df.to_csv(Path(VALIDATION_DATASET_PATH, 'val_by_pixel.csv'), index=False)
     test_pixels_df.to_csv(Path(TESTING_DATASET_PATH, 'test_by_pixel.csv'), index=False)
 
-    # inspect the sampled pixels:
+    # Inspect the sampled pixels:
     sampler_visual_inspector(training=True)
 
-    # explore the pixel datasets:
+    # Explore the pixel datasets:
     dataset_explorer(dataframe=train_pixels_df, sampling_type="pixel", train=True)
     dataset_explorer(dataframe=val_pixels_df, sampling_type="pixel", train=False)
     dataset_explorer(dataframe=test_pixels_df, sampling_type="pixel", train=False)
@@ -466,12 +466,12 @@ def main() -> None:
     val_patches_df = val_patch_sampler()
     test_patches_df = patch_sampler(train=False)
 
-    # save the sampled patches as pickle files to preserve the image data:
+    # Save the sampled patches as pickle files to preserve the image data:
     train_patches_df.to_pickle(Path(TRAINING_DATASET_PATH, 'train_by_patch.pkl'))
     val_patches_df.to_pickle(Path(VALIDATION_DATASET_PATH, 'val_by_patch.pkl'))
     test_patches_df.to_pickle(Path(TESTING_DATASET_PATH, 'test_by_patch.pkl'))
 
-    # explore the patch datasets:
+    # Explore the patch datasets:
     dataset_explorer(dataframe=train_patches_df, sampling_type="patch", train=True)
     dataset_explorer(dataframe=val_patches_df, sampling_type="patch", train=False)
     dataset_explorer(dataframe=test_patches_df, sampling_type="patch", train=False)

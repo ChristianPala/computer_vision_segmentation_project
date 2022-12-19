@@ -111,6 +111,7 @@ def main():
     :return: None, saves the AUC score in the results' folder.
     """
 
+    # Load training, validation and testing sets
     train = load_dataset(classification_type='by_patch', split_type='train')
     val = load_dataset(classification_type='by_patch', split_type='val')
     test = load_dataset(classification_type='by_patch', split_type='test')
@@ -132,32 +133,34 @@ def main():
     y_val = np.array(y_val.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
     y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
 
-    # create the model:
+    # Create the Feed-Forward Neural Network model
     model = create_model()
 
-    # train the model:
+    # Train the model:
     model.fit(x_train, y_train, epochs=10, batch_size=32,
               validation_data=(x_val, y_val), callbacks=[tf.keras.callbacks.TensorBoard(log_dir=log_path)])
 
-    # evaluate the model on the AUC metric:
+    # Evaluate the model on the AUC metric:
     y_pred = model.predict(x_test)
-    # get the categorical predictions from the sigmoid output:
+
+    # Get the categorical predictions from the sigmoid output:
     y_pred = np.where(y_pred > 0.5, 1, 0)
-    # flatten for the AUC metric:
+
+    # Flatten for the AUC metric:
     y_pred_flat = y_pred.ravel()
     y_test_flat = y_test.ravel()
-    # calculate the AUC:
-    auc_ff_nn = roc_auc_score(y_test_flat, y_pred_flat)
 
+    # Calculate the AUC:
+    auc_ff_nn = roc_auc_score(y_test_flat, y_pred_flat)
     print(f'The AUC on the test set is: {auc_ff_nn}')
 
-    # ensure the results directory exists:
+    # Ensure the results directory exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
-    # save the results:
+    # Save the results:
     results = pd.DataFrame({'model': ['dense'], 'auc': [auc_ff_nn]})
     results.to_csv(Path(RESULTS_PATH, 'segmentation_by_patch_classification_feed_forward.csv'), index=False)
 
-    # get 3 random images from the test set:
+    # Get 3 random images from the test set:
     random_indexes = np.random.choice(range(len(x_test)), 3)
     for i in random_indexes:
         # get the image and the segmentation:

@@ -61,6 +61,7 @@ def get_image_and_segmentation_for_validation(img_number: Union[str, int]) \
 
     return im, segmentation
 
+
 def get_binary_mask(img_number: Union[str, int], train: bool = True) -> np.ndarray:
     """
     Gets the binary mask corresponding to the given number
@@ -73,7 +74,6 @@ def get_binary_mask(img_number: Union[str, int], train: bool = True) -> np.ndarr
     binary_mask_path = str(Path(path, 'binary_mask_sky_' + str(img_number) + '.png'))
     binary_mask = skimage.io.imread(binary_mask_path)
     return binary_mask
-
 
 
 def visualize_image_and_segmentation(img_number: Union[str, int] = 1, train: bool = True,
@@ -99,6 +99,7 @@ def visualize_image_and_segmentation(img_number: Union[str, int] = 1, train: boo
     ax1.yaxis.set_visible(False)
     ax1.imshow(segmentation, vmin=0, vmax=255)
     fig.show()
+
 
 def remove_alpha_channel(image: np.ndarray) -> np.ndarray:
     """

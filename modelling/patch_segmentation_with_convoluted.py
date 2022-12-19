@@ -41,6 +41,7 @@ def main():
     :return: None, saves the AUC score in the results' folder.
     """
 
+    # Load training, validation and testing sets
     train = load_dataset(classification_type='by_patch', split_type='train')
     validation = load_dataset(classification_type='by_patch', split_type='val')
     test = load_dataset(classification_type='by_patch', split_type='test')
@@ -62,29 +63,34 @@ def main():
     y_validation = np.array(y_validation.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
     y_test = np.array(y_test.tolist()).reshape((-1, PATCH_SIZE, PATCH_SIZE, 1)).astype(np.float32)
 
+    # Create the Convolutional Neural Network model
     model = create_model()
+
+    # Compile the model
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=3, batch_size=32, validation_data=(x_validation, y_validation),
+    # Train the model
+    model.fit(x_train, y_train, epochs=3, batch_size=32,
+              validation_data=(x_validation, y_validation),
               callbacks=[tf.keras.callbacks.TensorBoard(log_dir=str(log_path), histogram_freq=1)])
 
     # Evaluate the model:
     y_pred = model.predict(x_test)
     y_pred = np.where(y_pred > 0.5, 1, 0)
 
-    # flatten for the AUC metric:
+    # Flatten for the AUC metric:
     y_pred_flat = y_pred.ravel()
     y_test_flat = y_test.ravel()
-    # calculate the AUC:
-    auc_cnn_standard = roc_auc_score(y_test_flat, y_pred_flat)
 
-    print(f'The AUC on the test set is: {auc_cnn_standard}')
+    # Calculate the AUC:
+    auc_cnn_unet = roc_auc_score(y_test_flat, y_pred_flat)
+    print(f'The AUC on the test set is: {auc_cnn_unet}')
 
     # Save the results:
     results_path = Path(RESULTS_PATH)
     results_path.mkdir(parents=True, exist_ok=True)
-    results = pd.DataFrame({'auc': [auc_cnn_standard]})
-    results_path /= 'auc_ff_nn.csv'
+    results = pd.DataFrame({'auc': [auc_cnn_unet]})
+    results_path /= 'auc_cnn_unet.csv'
     results.to_csv(results_path, index=False)
 
 

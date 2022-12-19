@@ -52,18 +52,24 @@ def main():
     The main function to run the evaluation of the second classifier
     :return: None. Prints the AUC score of the model
     """
+    # Create a Logistic regression model
     log_reg = create_model(model_type='logistic_regression')
     log_reg = train_model(log_reg)
+
+    # Create a K-nearest neighbors model
     knn = create_model(model_type='knn')
     knn = train_model(knn)
+
+    # Compute AUC score for both the models
     auc_log = evaluate_model(log_reg)
     print(f'Logistic Regression test set AUC with RGB as features: {auc_log}')
     auc_knn = evaluate_model(knn)
     print(f'KNN test set AUC with RBG as features: {auc_knn}')
 
-    # ensure that the results folder exists:
+    # Ensure the results directory exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)
-    # save the results:
+
+    # Save the results:
     results = pd.DataFrame({'model': ['logistic_regression', 'knn'],
                             'val_auc': [auc_log, auc_knn]})
     results.to_csv(Path(RESULTS_PATH, 'pixel_classifier_by_rgb_as_feature.csv'), index=False)
