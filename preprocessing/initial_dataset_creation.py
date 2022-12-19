@@ -66,11 +66,14 @@ def create_initial_dataset_folder_with_images_and_masks(city: str, train: bool =
             shutil.rmtree(val_path)
             val_path.mkdir(parents=True, exist_ok=True)
 
-        for image_path in glob(str(Path(LEFT_IMG_8_BIT_PATH, sub_folder, val_city, "*.png"))):
-            shutil.copy(str(image_path), str(val_path))
+        # We only need the first 100 images from the validation dataset:
+        for i, image_path in enumerate(glob(str(Path(LEFT_IMG_8_BIT_PATH, sub_folder, val_city, "*.png")))):
+            if i < 100:
+                shutil.copy(str(image_path), str(val_path))
 
-        for image_path in glob(str(Path(GT_FINE_PATH, sub_folder, val_city, "*color.png"))):
-            shutil.copy(str(image_path), str(val_path))
+        for i, image_path in enumerate(glob(str(Path(GT_FINE_PATH, sub_folder, val_city, "*color.png")))):
+            if i < 100:
+                shutil.copy(str(image_path), str(val_path))
 
 
 def rename_images_and_masks(train: bool = True, val: bool = True) -> None:

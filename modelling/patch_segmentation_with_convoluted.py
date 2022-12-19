@@ -18,9 +18,9 @@ from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
-from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH
-PATCH_SIZE = 512
+from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
 
+# Ensure the log directory exists:
 log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
 log_path.mkdir(parents=True, exist_ok=True)
 
@@ -65,7 +65,7 @@ def main():
     model = create_model()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=7, batch_size=32, validation_data=(x_validation, y_validation),
+    model.fit(x_train, y_train, epochs=3, batch_size=32, validation_data=(x_validation, y_validation),
               callbacks=[tf.keras.callbacks.TensorBoard(log_dir=str(log_path), histogram_freq=1)])
 
     # Evaluate the model:

@@ -28,4 +28,6 @@ RESULTS_PATH = os.path.join(ROOT_PATH, 'results')
 SAMPLE_IMAGE_RESULTS_PATH = os.path.join(RESULTS_PATH, 'sample_images')
 # Tensorboard logs folder:
 TENSORBOARD_LOGS_PATH = os.path.join(RESULTS_PATH, 'tensorboard_logs')
+# Patch size:
+PATCH_SIZE = 256
 

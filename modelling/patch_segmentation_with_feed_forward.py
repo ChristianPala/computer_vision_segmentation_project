@@ -21,9 +21,7 @@ from modelling.pixel_classifier_by_average_rgb import load_dataset
 import tensorflow as tf
 from tensorboard import program
 # Global variables:
-from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH
-
-PATCH_SIZE = 512  # the size of the patches extracted from the images:
+from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
 # Ensure the directory exists:
 Path(SAMPLE_IMAGE_RESULTS_PATH).mkdir(parents=True, exist_ok=True)
 log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))

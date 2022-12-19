@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 # Global variables:
-from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, VALIDATION_DATASET_PATH
+from config import TRAINING_DATASET_PATH, TESTING_DATASET_PATH, VALIDATION_DATASET_PATH, PATCH_SIZE
 
 
 def get_images_and_binary_masks(train: bool = True) -> (list, list):
@@ -45,7 +45,7 @@ def get_images_and_binary_masks(train: bool = True) -> (list, list):
 def get_val_images_and_binary_masks() -> (list, list):
     """
     Auxiliary function to get the images and the binary masks from the validation dataset.
-    :return:
+    :return: the images and the binary masks from the validation dataset.
     """
     # get the correct path:
     path = VALIDATION_DATASET_PATH
@@ -68,7 +68,8 @@ def get_val_images_and_binary_masks() -> (list, list):
 def compute_validation_proportions() -> (int, int):
     """
     Computes the total number of pixels in the sky class in the validation dataset
-    :return: the total number of pixels in the sky class
+    :return: the total number of pixels in the sky class and the total number of pixels in the non-sky class
+    for the validation dataset.
     """
     # get the binary masks:
     binary_masks = get_val_images_and_binary_masks()[1]
@@ -301,7 +302,7 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
     """
     name = "Training" if train else "Testing"
 
-    sample_type = "pixels" if sampling_type == "pixel" else "patch"
+    sample_type = "pixels" if sampling_type == "pixel" else "patches"
 
     # print the number of rows and columns
     print("*" * 50)
@@ -316,7 +317,7 @@ def dataset_explorer(dataframe: pd.DataFrame, sampling_type: str, train: bool = 
         # print the number of sky and non-sky pixels per image
         print(f"{name} dataframe sampled by {sampling_type} has approximately "
               f"{int(dataframe.groupby('image_nr')['class'].sum().mean())} "
-              f"sky {sample_type}es per image and approximately "
+              f"sky {sample_type} per image and approximately "
               f"{int(dataframe.groupby('image_nr')['class'].count().mean() - dataframe.groupby('image_nr')['class'].sum().mean())} "
               f"non-sky {sample_type} per image.")
 
@@ -342,7 +343,7 @@ def has_sky_delta(binary_mask: np.ndarray, delta: int = 256) -> bool:
     return True if len(sky_pixels > 0) else False
 
 
-def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = 256) \
+def get_patches(image: np.ndarray, binary_mask: np.ndarray, n_patches: int = 6, delta: int = PATCH_SIZE // 2) \
         -> ([np.ndarray], [np.ndarray], [int], [int], [int]):
     patches: [np.ndarray] = []
     mask_labels: [np.ndarray] = []
@@ -412,6 +413,7 @@ def val_patch_sampler() -> pd.DataFrame:
     images, binary_masks = get_val_images_and_binary_masks()
 
     df = pd.DataFrame(columns=['image_nr', 'patch', 'center_x', 'center_y', 'class', 'mask_label'])
+
     img_num: int = 0
     for img, mask in tqdm(zip(images, binary_masks), desc='Images', total=len(images)):
         if not has_sky_delta(mask):  # Skip images with no sky
