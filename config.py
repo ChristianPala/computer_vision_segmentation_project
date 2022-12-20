@@ -25,7 +25,7 @@ TESTING_CITY = "zurich"
 # Results folder:
 RESULTS_PATH = os.path.join(ROOT_PATH, 'results')
 # Sample image results folder:
-SAMPLE_IMAGE_RESULTS_PATH = os.path.join(RESULTS_PATH, 'sample_images')
+SAMPLED_IMAGE_RESULTS_PATH = os.path.join(RESULTS_PATH, 'sampled_images')
 # Tensorboard logs folder:
 TENSORBOARD_LOGS_PATH = os.path.join(RESULTS_PATH, 'tensorboard_logs')
 # Patch size:

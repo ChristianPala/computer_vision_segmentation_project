@@ -20,7 +20,7 @@ from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
-from config import RESULTS_PATH, SAMPLE_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
+from config import RESULTS_PATH, SAMPLED_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
 log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
 log_path.mkdir(parents=True, exist_ok=True)
 
@@ -109,6 +109,12 @@ def main() -> None:
     results = pd.DataFrame({'auc': [auc_cnn_unet]})
     results_path /= 'auc_cnn_unet.csv'
     results.to_csv(results_path, index=False)
+
+    # try predicting the original image, 2048x1024 pixels:
+    test_0 = load_dataset(classification_type='by_patch', split_type='test', image_id=0)
+
+
+
 
 
 if __name__ == '__main__':

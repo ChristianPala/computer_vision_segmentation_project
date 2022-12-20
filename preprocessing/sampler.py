@@ -265,8 +265,8 @@ def plot_binary_mask_and_sampled_pixels(pixel_dataframe: pd.DataFrame,
 
     # plot the binary mask
     plt.imshow(binary_mask, cmap='gray', vmin=0, vmax=1)
-    # plot the sampled pixels
-    plt.scatter(x=pixels['x'], y=pixels['y'], c=pixels['class'], cmap='bwr', s=1, alpha=0.8)
+    # plot the sampled pixels, plot colorblind friendly colors
+    plt.scatter(x=pixels['x'], y=pixels['y'], c=pixels['class'], cmap='bwo', s=1, alpha=0.8)
     # add a legend
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., labels=['sky', 'non-sky'],
                title='Pixel Class')
