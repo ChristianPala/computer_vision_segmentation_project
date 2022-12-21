@@ -1,3 +1,3 @@
 model,val_auc
-logistic_regression,0.9933488841126898
-knn,0.9768766485447241
+logistic_regression,0.992602117843374
+knn,0.9723342669309221
