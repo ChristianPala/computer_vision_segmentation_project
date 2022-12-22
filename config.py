@@ -30,4 +30,3 @@ SAMPLED_IMAGE_RESULTS_PATH = os.path.join(RESULTS_PATH, 'sampled_images')
 TENSORBOARD_LOGS_PATH = os.path.join(RESULTS_PATH, 'tensorboard_logs')
 # Patch size:
 PATCH_SIZE = 256
-

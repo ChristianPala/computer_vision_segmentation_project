@@ -1,6 +1,7 @@
 # Library to classify a single pixel with a convoluted neural network
 # Libraries:
 # Data manipulation:
+import pickle
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
@@ -11,6 +12,7 @@ import os
 from keras import Input
 from keras import Model
 from keras.layers import Conv2D, BatchNormalization, SeparableConv2D, MaxPooling2D, UpSampling2D, Concatenate
+from plot_keras_history import plot_history
 from tensorboard import program
 import tensorflow as tf
 # Plots
@@ -20,9 +22,28 @@ from sklearn.metrics import roc_auc_score
 from modelling.pixel_classifier_by_average_rgb import load_dataset
 
 # Global variables:
-from config import RESULTS_PATH, SAMPLED_IMAGE_RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
+from config import RESULTS_PATH, TENSORBOARD_LOGS_PATH, PATCH_SIZE
+
 log_path = Path(TENSORBOARD_LOGS_PATH, datetime.now().strftime("%Y%m%d-%H%M%S"))
+LEARNING_CURVE_GRAPHS = os.path.join(RESULTS_PATH, 'learning_curves')
 log_path.mkdir(parents=True, exist_ok=True)
+Path(LEARNING_CURVE_GRAPHS).mkdir(parents=True, exist_ok=True)
+
+
+def my_plot_history(history, fig_name: str) -> None:
+    # Plot the epochs history with accuracy and loss function values at each epoch
+    pd.DataFrame(history.history).plot(figsize=(8, 5))
+    plt.grid(True)
+    plt.gca().set_ylim(0, 1)
+    save_fig(fig_name)
+    plt.xlabel('Epoch')
+    plt.ylabel('Scores')
+    plt.show()
+
+def save_fig(fig_name, tight_layout=True, fig_extension="png", resolution=300):
+    if tight_layout:
+        plt.tight_layout()
+    plt.savefig(fig_name, dpi=resolution)
 
 
 def create_model() -> Model:
@@ -46,7 +67,7 @@ def create_model() -> Model:
     x = SeparableConv2D(filters=32, kernel_size=(3, 3), padding='same', activation='relu')(x)
     x = BatchNormalization()(x)
     x = UpSampling2D(2)(x)
-    x = Concatenate()([x, x2]) # Skip connections
+    x = Concatenate()([x, x2])  # Skip connections
     x = SeparableConv2D(filters=32, kernel_size=(3, 3), padding='same', activation='relu')(x)
     x = BatchNormalization()(x)
     x = UpSampling2D(2)(x)
@@ -87,13 +108,12 @@ def main() -> None:
     model = create_model()
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['AUC'])
 
-    model.fit(x_train, y_train, epochs=3, batch_size=128,
-              validation_data=(x_validation, y_validation),
-              callbacks=[tf.keras.callbacks.TensorBoard(str(log_path))])
+    history = model.fit(x_train, y_train, epochs=10, batch_size=16,
+                        validation_data=(x_validation, y_validation),
+                        callbacks=[tf.keras.callbacks.TensorBoard(str(log_path))])
 
     # Evaluate the model:
-    y_pred = model.predict(x_test, batch_size=32)
-    y_pred = np.where(y_pred > 0.5, 1, 0)
+    y_pred = model.predict(x_test, batch_size=16)
 
     # flatten for the AUC metric:
     y_pred_flat = y_pred.ravel()
@@ -110,16 +130,16 @@ def main() -> None:
     results_path /= 'auc_cnn_unet.csv'
     results.to_csv(results_path, index=False)
 
-    # try predicting the original image, 2048x1024 pixels:
-    test_0 = load_dataset(classification_type='by_patch', split_type='test', image_id=0)
+    # Save the model as a pickle file:
+    model_path = Path(RESULTS_PATH, 'models')
+    model_path.mkdir(parents=True, exist_ok=True)
 
+    model_path /= 'cnn_unet.h5'
+    pickle.dump(model, open(model_path, 'wb'))
 
-
+    # Plot the training history:
+    my_plot_history(history, str(Path(LEARNING_CURVE_GRAPHS, 'auc_cnn_unet')))
 
 
 if __name__ == '__main__':
-    tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', str(log_path)])
-    url = tb.launch()
-    print(f"Tensorflow listening on {url}")
     main()

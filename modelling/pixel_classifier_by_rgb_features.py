@@ -60,11 +60,18 @@ def main():
     knn = create_model(model_type='knn')
     knn = train_model(knn)
 
+    # Create rf model
+    rf = create_model(model_type='rf')
+    rf = train_model(rf)
+
+
     # Compute AUC score for both the models
     auc_log = evaluate_model(log_reg)
     print(f'Logistic Regression test set AUC with RGB as features: {auc_log}')
     auc_knn = evaluate_model(knn)
     print(f'KNN test set AUC with RBG as features: {auc_knn}')
+    auc_rf = evaluate_model(rf)
+    print(f'RF test set AUC with RBG as features: {auc_rf}')
 
     # Ensure the results directory exists:
     Path(RESULTS_PATH).mkdir(parents=True, exist_ok=True)

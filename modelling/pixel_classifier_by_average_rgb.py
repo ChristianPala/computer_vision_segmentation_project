@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from sklearn.ensemble import RandomForestClassifier
 # Modelling:
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -57,6 +58,9 @@ def create_model(model_type: str = None) -> LogisticRegression or KNeighborsClas
         model = LogisticRegression(random_state=random_seed)
     elif model_type == 'knn':
         model = KNeighborsClassifier()
+
+    elif model_type == 'rf':
+        model = RandomForestClassifier(random_state=random_seed)
     else:
         raise ValueError(f'Unknown model type: {model_type}')
 
